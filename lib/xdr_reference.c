@@ -26,9 +26,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <sys/cdefs.h>
-#include <sys/cdefs.h>
-
 /*
  * xdr_reference.c, Generic XDR routines impelmentation.
  *
@@ -38,15 +35,14 @@
  * "pointers".  See xdr.h for more info on the interface to xdr.
  */
 
-#include "namespace.h"
-#include <err.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include <rpc/types.h>
 #include <rpc/xdr.h>
-#include "libc_private.h"
+
+#include "xdr_private.h"
 
 /*
  * XDR an indirect pointer
@@ -58,11 +54,7 @@
  * proc is the routine to handle the referenced structure.
  */
 bool_t
-xdr_reference(xdrs, pp, size, proc)
-	XDR *xdrs;
-	caddr_t *pp;		/* the pointer to work on */
-	u_int size;		/* size of the object pointed to */
-	xdrproc_t proc;		/* xdr routine to handle the object */
+xdr_reference(XDR *xdrs, caddr_t *pp, u_int size, xdrproc_t proc)
 {
 	caddr_t loc = *pp;
 	bool_t stat;
@@ -75,7 +67,7 @@ xdr_reference(xdrs, pp, size, proc)
 		case XDR_DECODE:
 			*pp = loc = (caddr_t) mem_alloc(size);
 			if (loc == NULL) {
-				warnx("xdr_reference: out of memory");
+				xdr_warnx("xdr_reference: out of memory");
 				return (FALSE);
 			}
 			memset(loc, 0, size);
@@ -115,13 +107,8 @@ xdr_reference(xdrs, pp, size, proc)
  *
  */
 bool_t
-xdr_pointer(xdrs,objpp,obj_size,xdr_obj)
-	XDR *xdrs;
-	char **objpp;
-	u_int obj_size;
-	xdrproc_t xdr_obj;
+xdr_pointer(XDR *xdrs, char **objpp, u_int obj_size, xdrproc_t xdr_obj)
 {
-
 	bool_t more_data;
 
 	more_data = (*objpp != NULL);

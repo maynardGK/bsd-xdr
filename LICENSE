@@ -1,16 +1,21 @@
-The library (all code under lib/) is derived from the XDR 
-components of the libtirpc package from Fedora 11
-(libtirpc-0.1.10-7.fc11.src.rpm, as patched by the rpm.spec
-and patches included in that package). As patched, the
-libtirpc XDR code has been explicitly relicensed by the
-copyright owner (Sun Microsystems) to a 3-clause BSD license.
-This license is reproduced in full in each of the affected
-source files, and is also available in licenses/SunRPC. 
+The library (all code under lib/ except xdr_private.h and
+xdr_private.c) is derived from the XDR components of the
+libtirpc package from Fedora 11 (libtirpc-0.1.10-7.fc11.src.rpm,
+as patched by the rpm.spec and patches included in that package).
+As patched, the libtirpc XDR code has been explicitly relicensed
+by the copyright owner (Sun Microsystems) to a 3-clause BSD license.
+This license is reproduced in full in each of the affected source
+files, and is also available in licenses/SunRPC.
 
 As documented in the libtirpc rpm.spec file from Fedora 11:
 * Tue May 19 2009 Tom "spot" Callaway <tcallawa@redhat.com> 0.1.10-7
-- Replace the Sun RPC license with the BSD license, with the explicit permission
-  of Sun Microsystems
+- Replace the Sun RPC license with the BSD license, with the explicit
+  permission of Sun Microsystems
+
+The two exceptions, lib/xdr_private.h and lib/xdr_private.c, are
+provided under the MIT/X license.  The full text of this license is
+included in each source file to which it applies, and is also
+available in licenses/MIT_X.
 
 Some other files in this distribution, especially test programs,
 may be licensed under certain other free licenses. For the most

@@ -1,4 +1,3 @@
-/*	$NetBSD: types.h,v 1.13 2000/06/13 01:02:44 thorpej Exp $	*/
 
 /*
  * Copyright (c) 2009, Sun Microsystems, Inc.
@@ -27,84 +26,132 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- *	from: @(#)types.h 1.18 87/07/24 SMI
- *	from: @(#)types.h	2.3 88/08/15 4.0 RPCSRC
- * $FreeBSD: src/include/rpc/types.h,v 1.10.6.1 2003/12/18 00:59:50 peter Exp $
+ *        from: @(#)types.h 1.18 87/07/24 SMI
+ *        from: @(#)types.h        2.3 88/08/15 4.0 RPCSRC
+ *        $FreeBSD: src/include/rpc/types.h,v 1.10.6.1 2003/12/18 00:59:50 peter Exp $
+ *        $NetBSD: types.h,v 1.13 2000/06/13 01:02:44 thorpej Exp $
  */
 
 /*
  * Rpc additions to <sys/types.h>
  */
-#ifndef _TIRPC_TYPES_H
-#define _TIRPC_TYPES_H
+#ifndef _RPC_TYPES_H
+#define _RPC_TYPES_H
 
+#if defined(__CYGWIN__) || defined(__MINGW32__)
+#include <stdint.h>
+#endif
 #include <sys/types.h>
-//#include <sys/_null.h>
 
-typedef int32_t bool_t;
-typedef int32_t enum_t;
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-typedef u_int32_t rpcprog_t;
-typedef u_int32_t rpcvers_t;
-typedef u_int32_t rpcproc_t;
-typedef u_int32_t rpcprot_t;
-typedef u_int32_t rpcport_t;
-typedef   int32_t rpc_inline_t;
+#if defined(__MINGW32__)
+/* mingw does not define these types anywhere */
+typedef uint8_t   u_int8_t;
+typedef uint16_t  u_int16_t;
+typedef uint32_t  u_int32_t;
+typedef uint64_t  u_int64_t;
+typedef char *    caddr_t;
+#endif
+
+#ifdef _MSC_VER
+/* MSVC does not define these types anywhere */
+typedef __int8            int8_t;
+typedef __int16           int16_t;
+typedef __int32           int32_t;
+typedef __int64           int64_t;
+typedef unsigned __int8   u_int8_t;
+typedef unsigned __int16  u_int16_t;
+typedef unsigned __int32  u_int32_t;
+typedef unsigned __int64  u_int64_t;
+typedef char *            caddr_t;
+#endif
+
+#ifndef _BSDTYPES_DEFINED
+typedef unsigned char   u_char;
+typedef unsigned short  u_short;
+typedef unsigned int    u_int;
+typedef unsigned long   u_long;
+#define _BSDTYPES_DEFINED
+#endif
+
+typedef u_int64_t  u_quad_t;
+typedef int64_t    quad_t;
+typedef int32_t    bool_t;
+typedef int32_t    enum_t;
+
 
 #ifndef NULL
-#	define NULL	0
+#define NULL 0
 #endif
-#define __dontcare__	-1
+#define __dontcare__   -1
 
 #ifndef FALSE
-#	define FALSE	(0)
+#define FALSE 0
 #endif
 #ifndef TRUE
-#	define TRUE	(1)
+#define TRUE 1
 #endif
 
-#define mem_alloc(bsize)	calloc(1, bsize)
-#define mem_free(ptr, bsize)	free(ptr)
 
+#define mem_alloc(bsize)        calloc(1, bsize)
+#define mem_free(ptr, bsize)    free(ptr)
+
+#ifdef __cplusplus
+}
+#endif
+
+#if !defined(__MINGW32__) && !defined(_MSC_VER)
+# include <time.h>
+#endif
 #include <sys/time.h>
-#include <sys/param.h>
-#include <stdlib.h>
-#include <netconfig.h>
 
-/*
- * The netbuf structure is defined here, because FreeBSD / NetBSD only use
- * it inside the RPC code. It's in <xti.h> on SVR4, but it would be confusing
- * to have an xti.h, since FreeBSD / NetBSD does not support XTI/TLI.
- */
+/* byteswap and ntohl stuff */
+#if defined(__MINGW32__)
+/* Fortunately, the ntohl/htonl/ntohs/htons functions do NOT
+   require that the winsock DLL is initializaed with the WSAStartup
+   functon, so they are safe to use by any caller. However, we
+   declare (slow) versions of the bswap functions just in case. */
+#include <winsock2.h>
+#define bswap_16(x) ((((x) & 0x00FF) << 8) | \
+                     (((x) & 0xFF00) >> 8))
+#define bswap_32(x) ((((x) & 0x000000FF) << 24) | \
+                     (((x) & 0x0000FF00) << 8) | \
+                     (((x) & 0x00FF0000) << 8) | \
+                     (((x) & 0xFF000000) >> 24))
+#define bswap_64(x) ((((x) & 0x00000000000000FFULL) << 56) | \
+                     (((x) & 0x000000000000FF00ULL) << 40) | \
+                     (((x) & 0x0000000000FF0000ULL) << 24) | \
+                     (((x) & 0x00000000FF000000ULL) << 8) | \
+                     (((x) & 0x000000FF00000000ULL) >> 8) | \
+                     (((x) & 0x0000FF0000000000ULL) >> 24) | \
+                     (((x) & 0x00FF000000000000ULL) >> 40) | \
+                     (((x) & 0xFF00000000000000ULL) >> 56))
+#elif defined(_MSC_VER)
+/* Fortunately, the ntohl/htonl/ntohs/htons functions do NOT
+   require that the winsock DLL is initializaed with the WSAStartup
+   functon, so they are safe to use by any caller. However, we
+   declare (slow) versions of the bswap functions just in case. */
+#include <winsock2.h>
+#define bswap_16(x) ((((x) & 0x00FFui16) << 8) | \
+                     (((x) & 0xFF00ui16) >> 8))
+#define bswap_32(x) ((((x) & 0x000000FFui32) << 24) | \
+                     (((x) & 0x0000FF00ui32) << 8) | \
+                     (((x) & 0x00FF0000ui32) << 8) | \
+                     (((x) & 0xFF000000ui32) >> 24))
+#define bswap_64(x) ((((x) & 0x00000000000000FFui64) << 56) | \
+                     (((x) & 0x000000000000FF00ui64) << 40) | \
+                     (((x) & 0x0000000000FF0000ui64) << 24) | \
+                     (((x) & 0x00000000FF000000ui64) << 8) | \
+                     (((x) & 0x000000FF00000000ui64) >> 8) | \
+                     (((x) & 0x0000FF0000000000ui64) >> 24) | \
+                     (((x) & 0x00FF000000000000ui64) >> 40) | \
+                     (((x) & 0xFF00000000000000ui64) >> 56))
+#else
+#include <byteswap.h>
+#include <arpa/inet.h>
+#endif
 
-/*
- * The netbuf structure is used for transport-independent address storage.
- */
-struct netbuf {
-  unsigned int maxlen;
-  unsigned int len;
-  void *buf;
-};
-
-/*
- * The format of the addres and options arguments of the XTI t_bind call.
- * Only provided for compatibility, it should not be used.
- */
-
-struct t_bind {
-  struct netbuf   addr;
-  unsigned int    qlen;
-};
-
-/*
- * Internal library and rpcbind use. This is not an exported interface, do
- * not use.
- */
-struct __rpc_sockinfo {
-	int si_af; 
-	int si_proto;
-	int si_socktype;
-	int si_alen;
-};
-
-#endif /* _TIRPC_TYPES_H */
+#endif /* _RPC_TYPES_H */
