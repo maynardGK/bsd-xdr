@@ -23,28 +23,29 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-#if defined(__CYGWIN__) || defined(__MINGW__) || defined(_MSC_VER)
+#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(_MSC_VER)
 # define NOMINMAX
 # define WIN_LEAN_AND_MEAN
 # include <windows.h>
 # include <ctype.h>
-#endif
+#endif /* not (__CYGWIN__ || __MINGW32__ || _MSC_VER) */
 
 #include "xdr_private.h"
 
 
-static const char * progname;
+static const char *progname;
 static const char *
-get_progname(void)
+get_progname (void)
 {
-  if (progname && *progname) return progname;
-#if defined(__CYGWIN__) || defined(__MINGW__) || defined(_MSC_VER)
+  if (progname && *progname)
+    return progname;
+#if defined(__CYGWIN__) || defined(__MINGW32__) || defined(_MSC_VER)
   {
     static char buf[1025];
     const char *p = buf;
-    GetModuleFileName(NULL,buf,1024);
+    GetModuleFileName (NULL, buf, 1024);
     buf[1024] = '\0';
-  
+
     /* Skip over the disk name in MSDOS pathnames. */
     if (isalpha ((unsigned char) p[0]) && p[1] == ':')
       p += 2;
@@ -52,26 +53,25 @@ get_progname(void)
       if (((*p) == '/') || ((*p) == '\\'))
         progname = p + 1;
   }
-#endif
+#endif /* not (__CYGWIN__ || __MINGW32__ || _MSC_VER) */
   return progname;
 }
 
 void
 xdr_vwarnx (const char *format, va_list ap)
 {
-  if (get_progname())
-    fprintf (stderr, "%s: ", get_progname());
+  if (get_progname ())
+    fprintf (stderr, "%s: ", get_progname ());
   if (format)
     vfprintf (stderr, format, ap);
   putc ('\n', stderr);
 }
 
 void
-xdr_warnx(const char *fmt, ...)
+xdr_warnx (const char *fmt, ...)
 {
   va_list ap;
   va_start (ap, fmt);
   xdr_vwarnx (fmt, ap);
   va_end (ap);
 }
-

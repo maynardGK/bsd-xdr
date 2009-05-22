@@ -39,7 +39,7 @@
 #define _RPC_TYPES_H
 
 #if defined(__CYGWIN__) || defined(__MINGW32__)
-#include <stdint.h>
+# include <stdint.h>
 #endif
 #include <sys/types.h>
 
@@ -53,8 +53,8 @@ typedef uint8_t   u_int8_t;
 typedef uint16_t  u_int16_t;
 typedef uint32_t  u_int32_t;
 typedef uint64_t  u_int64_t;
-typedef char *    caddr_t;
-#endif
+typedef char     *caddr_t;
+#endif /* __MINGW32__ */
 
 #ifdef _MSC_VER
 /* MSVC does not define these types anywhere */
@@ -66,35 +66,34 @@ typedef unsigned __int8   u_int8_t;
 typedef unsigned __int16  u_int16_t;
 typedef unsigned __int32  u_int32_t;
 typedef unsigned __int64  u_int64_t;
-typedef char *            caddr_t;
-#endif
+typedef char             *caddr_t;
+#endif /* _MSC_VER */
 
 #ifndef _BSDTYPES_DEFINED
-typedef unsigned char   u_char;
-typedef unsigned short  u_short;
-typedef unsigned int    u_int;
-typedef unsigned long   u_long;
-#define _BSDTYPES_DEFINED
-#endif
+typedef unsigned char  u_char;
+typedef unsigned short u_short;
+typedef unsigned int   u_int;
+typedef unsigned long  u_long;
+# define _BSDTYPES_DEFINED
+#endif /* not _BSDTYPES_DEFINED */
 
-typedef u_int64_t  u_quad_t;
-typedef int64_t    quad_t;
-typedef int32_t    bool_t;
-typedef int32_t    enum_t;
+typedef u_int64_t u_quad_t;
+typedef int64_t   quad_t;
+typedef int32_t   bool_t;
+typedef int32_t   enum_t;
 
 
 #ifndef NULL
-#define NULL 0
+# define NULL 0
 #endif
-#define __dontcare__   -1
+#define __dontcare__ -1
 
 #ifndef FALSE
-#define FALSE 0
+# define FALSE 0
 #endif
 #ifndef TRUE
-#define TRUE 1
+# define TRUE 1
 #endif
-
 
 #define mem_alloc(bsize)        calloc(1, bsize)
 #define mem_free(ptr, bsize)    free(ptr)
@@ -114,44 +113,44 @@ typedef int32_t    enum_t;
    require that the winsock DLL is initializaed with the WSAStartup
    functon, so they are safe to use by any caller. However, we
    declare (slow) versions of the bswap functions just in case. */
-#include <winsock2.h>
-#define bswap_16(x) ((((x) & 0x00FF) << 8) | \
-                     (((x) & 0xFF00) >> 8))
-#define bswap_32(x) ((((x) & 0x000000FF) << 24) | \
-                     (((x) & 0x0000FF00) << 8) | \
-                     (((x) & 0x00FF0000) << 8) | \
-                     (((x) & 0xFF000000) >> 24))
-#define bswap_64(x) ((((x) & 0x00000000000000FFULL) << 56) | \
-                     (((x) & 0x000000000000FF00ULL) << 40) | \
-                     (((x) & 0x0000000000FF0000ULL) << 24) | \
-                     (((x) & 0x00000000FF000000ULL) << 8) | \
-                     (((x) & 0x000000FF00000000ULL) >> 8) | \
-                     (((x) & 0x0000FF0000000000ULL) >> 24) | \
-                     (((x) & 0x00FF000000000000ULL) >> 40) | \
-                     (((x) & 0xFF00000000000000ULL) >> 56))
+# include <winsock2.h>
+# define bswap_16(x) ((((x) & 0x00FF) << 8) | \
+                      (((x) & 0xFF00) >> 8))
+# define bswap_32(x) ((((x) & 0x000000FF) << 24) | \
+                      (((x) & 0x0000FF00) << 8) | \
+                      (((x) & 0x00FF0000) << 8) | \
+                      (((x) & 0xFF000000) >> 24))
+# define bswap_64(x) ((((x) & 0x00000000000000FFULL) << 56) | \
+                      (((x) & 0x000000000000FF00ULL) << 40) | \
+                      (((x) & 0x0000000000FF0000ULL) << 24) | \
+                      (((x) & 0x00000000FF000000ULL) << 8) | \
+                      (((x) & 0x000000FF00000000ULL) >> 8) | \
+                      (((x) & 0x0000FF0000000000ULL) >> 24) | \
+                      (((x) & 0x00FF000000000000ULL) >> 40) | \
+                      (((x) & 0xFF00000000000000ULL) >> 56))
 #elif defined(_MSC_VER)
 /* Fortunately, the ntohl/htonl/ntohs/htons functions do NOT
    require that the winsock DLL is initializaed with the WSAStartup
    functon, so they are safe to use by any caller. However, we
    declare (slow) versions of the bswap functions just in case. */
-#include <winsock2.h>
-#define bswap_16(x) ((((x) & 0x00FFui16) << 8) | \
-                     (((x) & 0xFF00ui16) >> 8))
-#define bswap_32(x) ((((x) & 0x000000FFui32) << 24) | \
-                     (((x) & 0x0000FF00ui32) << 8) | \
-                     (((x) & 0x00FF0000ui32) << 8) | \
-                     (((x) & 0xFF000000ui32) >> 24))
-#define bswap_64(x) ((((x) & 0x00000000000000FFui64) << 56) | \
-                     (((x) & 0x000000000000FF00ui64) << 40) | \
-                     (((x) & 0x0000000000FF0000ui64) << 24) | \
-                     (((x) & 0x00000000FF000000ui64) << 8) | \
-                     (((x) & 0x000000FF00000000ui64) >> 8) | \
-                     (((x) & 0x0000FF0000000000ui64) >> 24) | \
-                     (((x) & 0x00FF000000000000ui64) >> 40) | \
-                     (((x) & 0xFF00000000000000ui64) >> 56))
-#else
-#include <byteswap.h>
-#include <arpa/inet.h>
-#endif
+# include <winsock2.h>
+# define bswap_16(x) ((((x) & 0x00FFui16) << 8) | \
+                      (((x) & 0xFF00ui16) >> 8))
+# define bswap_32(x) ((((x) & 0x000000FFui32) << 24) | \
+                      (((x) & 0x0000FF00ui32) << 8) | \
+                      (((x) & 0x00FF0000ui32) << 8) | \
+                      (((x) & 0xFF000000ui32) >> 24))
+# define bswap_64(x) ((((x) & 0x00000000000000FFui64) << 56) | \
+                      (((x) & 0x000000000000FF00ui64) << 40) | \
+                      (((x) & 0x0000000000FF0000ui64) << 24) | \
+                      (((x) & 0x00000000FF000000ui64) << 8) | \
+                      (((x) & 0x000000FF00000000ui64) >> 8) | \
+                      (((x) & 0x0000FF0000000000ui64) >> 24) | \
+                      (((x) & 0x00FF000000000000ui64) >> 40) | \
+                      (((x) & 0xFF00000000000000ui64) >> 56))
+#else /* not __MINGW32__ and not _MSC_VER */
+# include <byteswap.h>
+# include <arpa/inet.h>
+#endif /* not __MINGW32__ and not _MSC_VER */
 
-#endif /* _RPC_TYPES_H */
+#endif /* !_RPC_TYPES_H */

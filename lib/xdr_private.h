@@ -44,17 +44,13 @@ void xdr_warnx (const char *fmt, ...);
 # endif
 # ifndef __IEEE_LITTLE_ENDIAN
 #  define __IEEE_LITTLE_ENDIAN
-#  undef  __IEEE_BIG_ENDIAN
 # endif
+# undef  __IEEE_BIG_ENDIAN
 # ifndef BYTE_ORDER
-#  ifdef __IEEE_LITTLE_ENDIAN
-#   define BYTE_ORDER LITTLE_ENDIAN
-#  else
-#   define BYTE_ORDER BIG_ENDIAN
-#  endif
+#  define BYTE_ORDER LITTLE_ENDIAN
 # endif
 # define IEEEFP
-#else
+#else  /* not __MINGW32__ and not _MSC_VER */
 # if defined(__m68k__) || defined(__sparc__) || defined(__i386__) || \
      defined(__mips__) || defined(__ns32k__) || defined(__alpha__) || \
      defined(__arm__) || defined(__ppc__) || defined(__ia64__) || \
@@ -62,11 +58,11 @@ void xdr_warnx (const char *fmt, ...);
 #  include <machine/endian.h>
 #  define IEEEFP
 # endif
-#endif
+#endif /* not __MINGW32__ and not _MSC_VER */
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif
+#endif /* _XDR_PRIVATE_H */
 
