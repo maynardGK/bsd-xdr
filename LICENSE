@@ -20,3 +20,14 @@ available in licenses/MIT_X.
 Some other files in this distribution, especially test programs,
 may be licensed under certain other free licenses. For the most
 part, these are non-copyleft. See below for details.
+
+src/getopt.h
+src/getopt_long.c
+   These are derived from the NetBSD's libgetopt, and are provided
+   under a 2-clause BSD license. The full text of this license is
+   included in each source file, and is also available in
+   licenses/NetBSD. These files are used only by the test programs,
+   and only on those platforms that do not provide getopt (namely,
+   mingw and msvc). Original location:
+     http://cvsweb.netbsd.org/bsdweb.cgi/pkgsrc/devel/libgetopt/files/
+
