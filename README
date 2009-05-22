@@ -1,0 +1,21 @@
+This package contains a port of Sun's XDR library. It was
+derived from the implementation in the libtirpc package
+(version 0.1.10-7) from Fedora 11. That version was relicensed
+with explicit permission from the copyright holder (Sun
+Microsystems) to a BSD license.  See the LICENSE file for
+more information.
+
+Some of the goals of this port:
+  Maintain the BSD license rather than copylefting it, as
+    in portableXDR and various other versions.
+  Avoid autotools.
+  Avoid "config.h" pollution (or similar) in public header files.
+  Compile successfully at highest reasonable warning level,
+    with warnings treated as errors.
+  Compile library as both static and shared.
+  Provide thorough tests of all libxdr facilities.
+  Where feasible, link test programs against both static and shared
+    libraries.
+  Verify identical output on a variety of platforms, especially 32-
+    and 64-bit hosts.
+
