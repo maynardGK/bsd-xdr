@@ -24,6 +24,9 @@
 #define _XDR_PRIVATE_H
 
 #include <stdarg.h>
+#if !defined(_MSC_VER)
+# include <sys/param.h>
+#endif
 
 #ifdef __cplusplus
 extern "C" {

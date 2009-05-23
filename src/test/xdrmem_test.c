@@ -281,13 +281,13 @@ test_xdrmem_u_short (opts * o)
   static const char *testid= "test_xdrmem_u_short";
   int i;
   char buf[80]; /* TEST_DATA_SZ*min size */
+  unsigned short data[TEST_DATA_SZ];
   xdrmem_creation_data xdr_data;
   xdr_data.o = o;
   xdr_data.finish_guard = 0;
   xdr_data.buf = &(buf[0]);
   xdr_data.buf_sz = 80;
 
-  unsigned short data[TEST_DATA_SZ];
   for (i=0;i<TEST_DATA_SZ;i++) data[i] = USHORT_DATA[i];
   return test_basic_type_core_xdr_u_short (o->log, testid, data,
       TEST_DATA_SZ, &xdrmem_stream_ops, (void *)&xdr_data);
@@ -508,7 +508,7 @@ test_xdrmem_int64_t (opts * o)
   xdr_data.o = o;
   xdr_data.finish_guard = 0;
   xdr_data.buf = &(buf[0]);
-  xdr_data.buf_sz = 80;
+  xdr_data.buf_sz = 160;
 
   for (i=0;i<TEST_DATA_SZ;i++) data[i] = INT64_DATA[i];
   return test_basic_type_core_xdr_int64_t (o->log, testid, data,

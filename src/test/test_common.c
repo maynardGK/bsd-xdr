@@ -12,6 +12,9 @@
 
 #include "test_common.h"
 
+#if defined(_MSC_VER)
+# define isnan _isnan
+#endif
 
 void
 set_program_name (const char *name)
@@ -389,9 +392,10 @@ const float FLOAT_DATA[TEST_DATA_SZ] =
 void init_float_data (float *data)
 {
   int i;
+  static float ZERO = 0.0;
   for (i=0;i<TEST_DATA_SZ;i++) data[i] = FLOAT_DATA[i];
-  data[FLT_DATA_PINF_INDEX]  = 1.0 / 0.0;
-  data[FLT_DATA_NINF_INDEX]  = logf (0.0);
+  data[FLT_DATA_PINF_INDEX]  = 1.0 / ZERO;
+  data[FLT_DATA_NINF_INDEX]  = logf (ZERO);
   data[FLT_DATA_NAN_INDEX]   = sqrtf (-1.0);
   data[FLT_DATA_NZERO_INDEX] = 1.0 / data[FLT_DATA_NINF_INDEX];
 }
@@ -415,9 +419,10 @@ const double DOUBLE_DATA[TEST_DATA_SZ] =
 void init_double_data (double *data)
 {
   int i;
+  static double ZERO = 0.0;
   for (i=0;i<TEST_DATA_SZ;i++) data[i] = DOUBLE_DATA[i];
-  data[FLT_DATA_PINF_INDEX]  = 1.0 / 0.0;
-  data[FLT_DATA_NINF_INDEX]  = log (0.0);
+  data[FLT_DATA_PINF_INDEX]  = 1.0 / ZERO;
+  data[FLT_DATA_NINF_INDEX]  = log (ZERO);
   data[FLT_DATA_NAN_INDEX]   = sqrt (-1.0);
   data[FLT_DATA_NZERO_INDEX] = 1.0 / data[FLT_DATA_NINF_INDEX];
 }

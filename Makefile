@@ -2,6 +2,7 @@ ifeq (0,${MAKELEVEL})
   top_srcdir:=$(shell pwd)
   uname:=$(shell uname -s)
   MAKE := ${MAKE} top_srcdir=$(top_srcdir) uname=$(uname)
+  TOP_MAKEFILE := $(lastword $(MAKEFILE_LIST))
 endif
 
 top_builddir:=$(shell pwd)
@@ -13,6 +14,7 @@ else ifeq ($(findstring MINGW,$(uname)),MINGW)
 else
   PLATFORM:=unknown
 endif
+STAMP=stamp-$(PLATFORM)
 
 ifeq ($(PLATFORM), cygwin)
   CC=gcc
@@ -85,27 +87,27 @@ all:
 	    false ;\
 	  else \
 	    echo "Building for $(PLATFORM)" ;\
-	    $(MAKE) recursive-all ;\
+	    $(MAKE) -f $(TOP_MAKEFILE) recursive-all ;\
 	  fi ;\
 	fi
 
 recursive-all: $(XDR_LIBRARIES) $(TEST_PROGS)
 
-stamp:
+$(STAMP):
 	@for d in $(PLATFORM)/lib $(PLATFORM)/src/test; do\
 	  if ! test -d $$d ; then\
 	    mkdir -p $$d ;\
 	  fi;\
 	done
-	touch stamp
+	touch $(STAMP)
 
 $(DEFFILE): lib/libxdr.def.in
 	cat lib/libxdr.def.in | sed -e "s/@@LIBNAME@@/$(SHRNAME)/" > $@
 
-$(PLATFORM)/$(SHRNAME): stamp $(DEFFILE) $(LIB_OBJS)
+$(PLATFORM)/$(SHRNAME): $(STAMP) $(DEFFILE) $(LIB_OBJS)
 	$(CC) -shared $(LDFLAGS) -o $@ $(LIB_LDEXTRA) $(DEFFILE) $(LIB_OBJS) $(LIB_DEPS)
 
-$(PLATFORM)/$(LIBNAME): stamp $(LIB_OBJS)
+$(PLATFORM)/$(LIBNAME): $(STAMP) $(LIB_OBJS)
 	$(AR) cr $@ $(LIB_OBJS)
 
 $(PLATFORM)/xdrmem_test$(EXEEXT): $(TEST_XDRMEM_OBJS) $(XDR_LIBRARIES)
@@ -116,7 +118,7 @@ $(PLATFORM)/%.$(O) : %.c
 
 .PHONY: clean
 clean:
-	-rm -f $(LIB_OBJS) $(DEFFILE) $(TEST_OBJS) stamp
+	-rm -f $(LIB_OBJS) $(DEFFILE) $(TEST_OBJS) $(STAMP)
 
 .PHONY: realclean
 realclean: clean

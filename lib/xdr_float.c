@@ -38,7 +38,6 @@
  */
 
 #include <sys/types.h>
-#include <sys/param.h>
 #include <stdio.h>
 
 #include <rpc/types.h>

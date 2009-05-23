@@ -38,9 +38,7 @@
 #ifndef _RPC_TYPES_H
 #define _RPC_TYPES_H
 
-#if defined(__CYGWIN__) || defined(__MINGW32__)
-# include <stdint.h>
-#endif
+#include <stdint.h>
 #include <sys/types.h>
 
 #ifdef __cplusplus
@@ -67,6 +65,7 @@ typedef unsigned __int16  u_int16_t;
 typedef unsigned __int32  u_int32_t;
 typedef unsigned __int64  u_int64_t;
 typedef char             *caddr_t;
+typedef long              ssize_t;
 #endif /* _MSC_VER */
 
 #ifndef _BSDTYPES_DEFINED
@@ -101,11 +100,6 @@ typedef int32_t   enum_t;
 #ifdef __cplusplus
 }
 #endif
-
-#if !defined(__MINGW32__) && !defined(_MSC_VER)
-# include <time.h>
-#endif
-#include <sys/time.h>
 
 /* byteswap and ntohl stuff */
 #if defined(__MINGW32__)

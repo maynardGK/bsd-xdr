@@ -60,13 +60,8 @@ int getopt (int argc, char *const *argv, const char *shortopts);
 XDR_TEST_DECLS_END
 #endif
 
-#if defined(_MSC_VER)
-# include <msvc/stdint.h>
-# include <msvc/inttypes.h>
-#else
-# include <stdint.h>
-# include <inttypes.h>
-#endif
+#include <stdint.h>
+#include <inttypes.h>
 
 #define XDR_LOG_SILENT     -1
 #define XDR_LOG_NORMAL      0
