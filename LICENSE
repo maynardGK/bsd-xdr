@@ -31,3 +31,15 @@ src/getopt_long.c
    mingw and msvc). Original location:
      http://cvsweb.netbsd.org/bsdweb.cgi/pkgsrc/devel/libgetopt/files/
 
+msvc/inttypes.h
+msvc/stdint.h
+   These are msvc-specific replacements for C99-standard
+   headers that are missing from msvc 2005 (8.0) and earlier.
+   They (or a suitable similar replacement) are required
+   by the visual studio port of bsd-xdr (and should be installed
+   along with rpc/xdr.h and rpc/types.h).  They are provided
+   under a 3-clause BSD license.  The full text of that license
+   is embedded in each source file, and is also available in
+   licenses/msinttypes. Original location:
+     http://code.google.com/p/msinttypes/  (rev. 24).
+
