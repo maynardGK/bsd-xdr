@@ -95,11 +95,17 @@ xdrmem_create (XDR * xdrs, caddr_t addr, u_int size, enum xdr_op op)
   xdrs->x_handy = size;
 }
 
+#ifdef _MSC_VER
+# pragma warning(push)
+# pragma warning(disable:4100)
+#endif
 static void
 xdrmem_destroy (XDR * xdrs)
 {
-
 }
+#ifdef _MSC_VER
+# pragma warning(pop)
+#endif
 
 static bool_t
 xdrmem_getlong_aligned (XDR * xdrs, long *lp)
@@ -185,11 +191,17 @@ xdrmem_setpos (XDR * xdrs, u_int pos)
 {
   caddr_t newaddr = xdrs->x_base + pos;
   caddr_t lastaddr = (caddr_t) xdrs->x_private + xdrs->x_handy;
-
+#ifdef _MSC_VER
+# pragma warning(push)
+# pragma warning(disable:4127)
+#endif
   if ((long) newaddr > (long) lastaddr
       || (UINT_MAX < LONG_MAX
           && (long) UINT_MAX < (long) lastaddr - (long) newaddr))
     return (FALSE);
+#ifdef _MSC_VER
+# pragma warning(pop)
+#endif
   xdrs->x_private = newaddr;
   xdrs->x_handy = (u_int) ((long) lastaddr - (long) newaddr);
   /* XXX sizeof(u_int) <? sizeof(ptrdiff_t) */
@@ -210,8 +222,16 @@ xdrmem_inline_aligned (XDR * xdrs, u_int len)
   return (buf);
 }
 
+#ifdef _MSC_VER
+# pragma warning(push)
+# pragma warning(disable:4100)
+#endif
 static int32_t *
 xdrmem_inline_unaligned (XDR * xdrs, u_int len)
 {
   return (0);
 }
+#ifdef _MSC_VER
+# pragma warning(pop)
+#endif
+

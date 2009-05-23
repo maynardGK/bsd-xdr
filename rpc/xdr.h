@@ -299,16 +299,16 @@ extern bool_t xdr_short (XDR *, short *);
 extern bool_t xdr_u_short (XDR *, u_short *);
 extern bool_t xdr_int8_t (XDR *, int8_t *);
 extern bool_t xdr_u_int8_t (XDR *, u_int8_t *);
-extern bool_t xdr_uint8_t (XDR *, u_int8_t *);
+extern bool_t xdr_uint8_t (XDR *, uint8_t *);
 extern bool_t xdr_int16_t (XDR *, int16_t *);
 extern bool_t xdr_u_int16_t (XDR *, u_int16_t *);
-extern bool_t xdr_uint16_t (XDR *, u_int16_t *);
+extern bool_t xdr_uint16_t (XDR *, uint16_t *);
 extern bool_t xdr_int32_t (XDR *, int32_t *);
 extern bool_t xdr_u_int32_t (XDR *, u_int32_t *);
-extern bool_t xdr_uint32_t (XDR *, u_int32_t *);
+extern bool_t xdr_uint32_t (XDR *, uint32_t *);
 extern bool_t xdr_int64_t (XDR *, int64_t *);
 extern bool_t xdr_u_int64_t (XDR *, u_int64_t *);
-extern bool_t xdr_uint64_t (XDR *, u_int64_t *);
+extern bool_t xdr_uint64_t (XDR *, uint64_t *);
 extern bool_t xdr_bool (XDR *, bool_t *);
 extern bool_t xdr_enum (XDR *, enum_t *);
 extern bool_t xdr_array (XDR *, char **, u_int *, u_int, u_int, xdrproc_t);
@@ -349,6 +349,7 @@ extern bool_t xdr_netobj (XDR *, struct netobj *);
  * These are the public routines for the various implementations of
  * xdr streams.
  */
+
 /* XDR using memory buffers */
 extern void xdrmem_create (XDR *, char *, u_int, enum xdr_op);
 

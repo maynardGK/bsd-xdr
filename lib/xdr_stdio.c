@@ -144,6 +144,10 @@ xdrstdio_setpos (XDR * xdrs, u_int pos)
           FALSE : TRUE);
 }
 
+#ifdef _MSC_VER
+# pragma warning(push)
+# pragma warning(disable:4100)
+#endif
 /* ARGSUSED */
 static int32_t *
 xdrstdio_inline (XDR * xdrs, u_int len)
@@ -159,3 +163,7 @@ xdrstdio_inline (XDR * xdrs, u_int len)
    */
   return (NULL);
 }
+#ifdef _MSC_VER
+# pragma warning(pop)
+#endif
+

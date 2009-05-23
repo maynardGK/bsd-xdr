@@ -49,6 +49,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
+#if defined(_MSC_VER) || defined(__MINGW32__)
+# include <io.h>
+# include <process.h>
+#else
+# include <unistd.h>
+#endif
 
 #include <rpc/types.h>
 #include <rpc/xdr.h>
@@ -124,8 +131,8 @@ typedef struct rec_strm
   caddr_t in_boundry;           /* can read up to this location */
   long fbtbc;                   /* fragment bytes to be consumed */
   bool_t last_frag;
-  u_int sendsize;
-  u_int recvsize;
+  u_int sendsize;               /* must be <= INT_MAX */
+  u_int recvsize;               /* must be <= INT_MAX */
 
   bool_t nonblock;
   bool_t in_haveheader;
@@ -140,7 +147,7 @@ typedef struct rec_strm
 static u_int fix_buf_size (u_int);
 static bool_t flush_out (RECSTREAM *, bool_t);
 static bool_t fill_input_buf (RECSTREAM *);
-static bool_t get_input_bytes (RECSTREAM *, char *, int);
+static bool_t get_input_bytes (RECSTREAM *, char *, size_t);
 static bool_t set_input_fragment (RECSTREAM *);
 static bool_t skip_input_bytes (RECSTREAM *, long);
 static bool_t realloc_stream (RECSTREAM *, int);
@@ -151,7 +158,7 @@ bool_t __xdrrec_setnonblock (XDR *, int);
 /*
  * Create an xdr handle for xdrrec
  * xdrrec_create fills in xdrs.  Sendsize and recvsize are
- * send and recv buffer sizes (0 => use default).
+ * send and recv buffer sizes (0 => use default), and must be <= INT_MAX.
  * tcp_handle is an opaque handle that is passed as the first parameter to
  * the procedures readit and writeit.  Readit and writeit are read and
  * write respectively.   They are like the system
@@ -162,8 +169,16 @@ xdrrec_create (XDR * xdrs, u_int sendsize, u_int recvsize, void *tcp_handle,
                int (*readit) (void *, void *, int),
                int (*writeit) (void *, void *, int))
 {
-  RECSTREAM *rstrm = mem_alloc (sizeof (RECSTREAM));
+  RECSTREAM *rstrm;
+  /* Although sendsize and recvsize are u_int, we require
+   * that they be less than INT_MAX, because often we need
+   * to compare against values held in (signed) integers.
+   * Please don't try to use send/recv buffers > 2GB...
+   */
+  assert (sendsize < (u_int)INT_MAX);
+  assert (recvsize < (u_int)INT_MAX);
 
+  rstrm = (RECSTREAM *) mem_alloc (sizeof (RECSTREAM));
   if (rstrm == NULL)
     {
       xdr_warnx ("xdrrec_create: out of memory");
@@ -173,6 +188,8 @@ xdrrec_create (XDR * xdrs, u_int sendsize, u_int recvsize, void *tcp_handle,
        */
       return;
     }
+  
+   
   /* allocate send buffer; insure BYTES_PER_UNIT alignment */
   rstrm->sendsize = sendsize = fix_buf_size (sendsize);
   rstrm->out_buffer = mem_alloc (rstrm->sendsize + BYTES_PER_XDR_UNIT);
@@ -284,7 +301,7 @@ static bool_t                   /* must manage buffers, fragments, and records *
 xdrrec_getbytes (XDR * xdrs, char *addr, u_int len)
 {
   RECSTREAM *rstrm = (RECSTREAM *) (xdrs->x_private);
-  int current;
+  size_t current;
 
   while (len > 0)
     {
@@ -402,6 +419,14 @@ xdrrec_inline (XDR * xdrs, u_int len)
 {
   RECSTREAM *rstrm = (RECSTREAM *) xdrs->x_private;
   int32_t *buf = NULL;
+  /* len represents the number of bytes to extract
+   * from the buffer. The number of bytes remaining
+   * in the buffer is rstrm->fbtbc, which is a long.
+   * Thus, the buffer size maximum is 2GB (!), and
+   * we require that no one ever try to read more
+   * than than number of bytes at once.
+   */
+  assert (len < (u_int)LONG_MAX);
 
   switch (xdrs->x_op)
     {
@@ -415,7 +440,7 @@ xdrrec_inline (XDR * xdrs, u_int len)
       break;
 
     case XDR_DECODE:
-      if ((len <= rstrm->fbtbc) &&
+      if (((long)len <= rstrm->fbtbc) &&
           ((rstrm->in_finger + len) <= rstrm->in_boundry))
         {
           buf = (int32_t *) (void *) rstrm->in_finger;
@@ -573,7 +598,7 @@ __xdrrec_getrec (XDR * xdrs, enum xprt_stat * statp, bool_t expectdata)
           return FALSE;
         }
       rstrm->in_reclen += fraglen;
-      if (rstrm->in_reclen > rstrm->recvsize)
+      if (rstrm->in_reclen > (int)rstrm->recvsize) /* guaranteed recvsize < INT_MAX */
         realloc_stream (rstrm, rstrm->in_reclen);
       if (rstrm->in_header & LAST_FRAG)
         {
@@ -683,13 +708,14 @@ fill_input_buf (RECSTREAM * rstrm)
 }
 
 static bool_t                   /* knows nothing about records!  Only about input buffers */
-get_input_bytes (RECSTREAM * rstrm, char *addr, int len)
+get_input_bytes (RECSTREAM * rstrm, char *addr, size_t len)
 {
   size_t current;
 
   if (rstrm->nonblock)
     {
-      if (len > (int) (rstrm->in_boundry - rstrm->in_finger))
+      if ((rstrm->in_boundry < rstrm->in_finger) ||               /* <-- should never happen, but avoids... */
+         (len > (size_t) (rstrm->in_boundry - rstrm->in_finger))) /* <-- signed/unsigned comparison */
         return FALSE;
       memcpy (addr, rstrm->in_finger, (size_t) len);
       rstrm->in_finger += len;
@@ -742,7 +768,7 @@ set_input_fragment (RECSTREAM * rstrm)
 static bool_t                   /* consumes input bytes; knows nothing about records! */
 skip_input_bytes (RECSTREAM * rstrm, long cnt)
 {
-  u_int32_t current;
+  size_t current;
 
   while (cnt > 0)
     {
@@ -753,7 +779,8 @@ skip_input_bytes (RECSTREAM * rstrm, long cnt)
             return (FALSE);
           continue;
         }
-      current = (u_int32_t) ((cnt < current) ? cnt : current);
+      /* in this loop (prior to last line), cnt > 0 so size_t cast is safe*/
+      current = (size_t) (((size_t)cnt < current) ? (size_t)cnt : current);
       rstrm->in_finger += current;
       cnt -= current;
     }
@@ -779,7 +806,7 @@ realloc_stream (RECSTREAM * rstrm, int size)
   char *buf;
   char *buf_algn;
 
-  if (size > rstrm->recvsize)
+  if (size > (int)rstrm->recvsize) /* recvsize guaranteed < INT_MAX */
     {
       buf = realloc (rstrm->in_buffer, (size_t) (size + BYTES_PER_XDR_UNIT));
       if (buf == NULL)

@@ -38,7 +38,7 @@ void xdr_vwarnx (const char *format, va_list ap);
 void xdr_warnx (const char *fmt, ...);
 
 /* endian issues */
-#if defined(__MINGW32__) || defined(_MSC_VER)
+#if defined(_MSC_VER) || defined(__MINGW32__)
 # ifndef BIG_ENDIAN
 #  define BIG_ENDIAN 4321
 # endif
@@ -53,7 +53,7 @@ void xdr_warnx (const char *fmt, ...);
 #  define BYTE_ORDER LITTLE_ENDIAN
 # endif
 # define IEEEFP
-#else  /* not __MINGW32__ and not _MSC_VER */
+#else  /* not _MSC_VER and not __MINGW32__ */
 # if defined(__m68k__) || defined(__sparc__) || defined(__i386__) || \
      defined(__mips__) || defined(__ns32k__) || defined(__alpha__) || \
      defined(__arm__) || defined(__ppc__) || defined(__ia64__) || \
@@ -61,7 +61,7 @@ void xdr_warnx (const char *fmt, ...);
 #  include <machine/endian.h>
 #  define IEEEFP
 # endif
-#endif /* not __MINGW32__ and not _MSC_VER */
+#endif /* not _MSC_VER and not __MINGW32__ */
 
 #ifdef __cplusplus
 }

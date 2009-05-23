@@ -1,14 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
-#include <limits.h>
 #include <string.h>
-#include <float.h>
 
 #include <rpc/types.h>
 #include <rpc/xdr.h>
 
 #include "test_common.h"
+#include "test_data.h"
+#include "test_xdrs.h"
 
 const char *program_name;
 
@@ -73,7 +72,7 @@ bool_t test_xdrstdio_pointer (opts *o);
 bool_t test_xdrstdio_list (opts *o);
 bool_t test_xdrstdio_primitive_struct (opts *o);
 
-/* This is a xdr_create_cb callback function and data struct */
+/* This is a data struct for the test callback functions */
 typedef struct _xdrstdio_creation_data {
   opts  *o;
   int    finish_guard;
@@ -82,8 +81,13 @@ typedef struct _xdrstdio_creation_data {
   FILE  *f;
 } xdrstdio_creation_data;
 
+#ifdef _MSC_VER
+# pragma warning(push)
+# pragma warning(disable:4100)
+#endif
+/* allocates storage for and computes full name to test file */
 bool_t
-xdrstdio_init_test_cb (enum xdr_op op, void * data)
+xdrstdio_test_setup_cb (enum xdr_op op, void * data)
 {
   xdrstdio_creation_data* xdrstdio_data = (xdrstdio_creation_data*)data;
 
@@ -101,7 +105,11 @@ xdrstdio_init_test_cb (enum xdr_op op, void * data)
   strcat (xdrstdio_data->fullname, xdrstdio_data->name);
   return TRUE;
 }
+#ifdef _MSC_VER
+# pragma warning(pop)
+#endif
 
+/* opens test file for read or write */
 bool_t
 xdrstdio_create_cb (XDR *xdrs, enum xdr_op op, void * data)
 {
@@ -121,7 +129,7 @@ xdrstdio_create_cb (XDR *xdrs, enum xdr_op op, void * data)
 
   if (!xdrstdio_data->f)
     {
-      log_msg (xdrstdio_data->o->log, XDR_LOG_SILENT,
+      log_msg (xdrstdio_data->o->log, XDR_LOG_NORMAL,
                "could not open data file: %s\n", xdrstdio_data->fullname);
       rVal = FALSE;
     }
@@ -133,6 +141,11 @@ xdrstdio_create_cb (XDR *xdrs, enum xdr_op op, void * data)
   return rVal;
 }
 
+#ifdef _MSC_VER
+# pragma warning(push)
+# pragma warning(disable:4100)
+#endif
+/* closes test file for read or write */
 bool_t
 xdrstdio_finish_cb (XDR * xdrs, enum xdr_op op, void * data)
 {
@@ -145,21 +158,20 @@ xdrstdio_finish_cb (XDR * xdrs, enum xdr_op op, void * data)
     }
   return TRUE;
 }
+#ifdef _MSC_VER
+# pragma warning(pop)
+#endif
 
-void
-xdrstdio_debug_cb (void * data)
-{
-}
-
+/* deletes test file (if desired) and frees memory for full name */
 bool_t
-xdrstdio_fini_test_cb (void * data)
+xdrstdio_test_teardown_cb (void * data)
 {
   xdrstdio_creation_data* xdrstdio_data = (xdrstdio_creation_data*)data;
   if (!xdrstdio_data->o->keep)
     {
       if (unlink (xdrstdio_data->fullname) != 0)
         {
-          log_msg (xdrstdio_data->o->log, XDR_LOG_SILENT,
+          log_msg (xdrstdio_data->o->log, XDR_LOG_NORMAL,
                    "Could not delete %s\n", xdrstdio_data->fullname);
         }
     }
@@ -170,11 +182,11 @@ xdrstdio_fini_test_cb (void * data)
 
 static xdr_stream_ops xdrstdio_stream_ops =
 {
-  xdrstdio_init_test_cb,
+  xdrstdio_test_setup_cb,
   xdrstdio_create_cb,
   xdrstdio_finish_cb,
-  xdrstdio_debug_cb,
-  xdrstdio_fini_test_cb
+  (xdr_debug_cb)(NULL),
+  xdrstdio_test_teardown_cb
 };
 
 void init_tmpdir (opts *o)
@@ -194,7 +206,7 @@ void init_tmpdir (opts *o)
       strcpy (p, o->tmpdir);
       if (!mkdir_p (p, 0700))
         {
-          log_msg(o->log, XDR_LOG_SILENT,
+          log_msg(o->log, XDR_LOG_NORMAL,
                   "Couldn't create tmpdir %s; trying %s\n",
                   p, DEFAULT_TMPDIR);
           free (p);
@@ -210,12 +222,12 @@ void init_tmpdir (opts *o)
   p = mkdtemp(o->tmpdir);
   if (!p)
     {
-      log_msg(o->log, XDR_LOG_SILENT,
+      log_msg(o->log, XDR_LOG_NORMAL,
               "Couldn't create tmpdir; using %s\n", FALLBACK_TMPDIR);
       strcpy (o->tmpdir, FALLBACK_TMPDIR);
       if (!mkdir_p (o->tmpdir, 0700))
         {
-          log_msg(o->log, XDR_LOG_SILENT,
+          log_msg(o->log, XDR_LOG_NORMAL,
                   "Couldn't even access %s; using '.'\n", FALLBACK_TMPDIR);
           strcpy (o->tmpdir, ".");
         }
@@ -228,13 +240,13 @@ void cleanup_tmpdir (opts * o)
     {
       if (rmdir (o->tmpdir) != 0)
         {
-          log_msg (o->log, XDR_LOG_SILENT,
+          log_msg (o->log, XDR_LOG_NORMAL,
                    "Could not remove directory: %s\n", o->tmpdir);
         }
     }
   else
     {
-      log_msg (o->log, XDR_LOG_INFO,
+      log_msg (o->log, XDR_LOG_NORMAL,
                "Temporary files saved in %s\n", o->tmpdir);
     }
   free (o->tmpdir);
@@ -243,7 +255,7 @@ void cleanup_tmpdir (opts * o)
 int
 main (int argc, char *argv[])
 {
-  int c, i;
+  int c;
   log_opts log;
   opts o;
   bool_t rc = TRUE;
@@ -281,44 +293,49 @@ main (int argc, char *argv[])
            "Using temp directory '%s'\n", o.tmpdir);
 
   rc &= test_xdrstdio_int (&o);
-//  rc &= test_xdrstdio_u_int (&o);
-//  rc &= test_xdrstdio_long (&o);
-//  rc &= test_xdrstdio_u_long (&o);
-//  rc &= test_xdrstdio_short (&o);
-//  rc &= test_xdrstdio_u_short (&o);
-//  rc &= test_xdrstdio_char (&o);
-//  rc &= test_xdrstdio_u_char (&o);
-//  rc &= test_xdrstdio_int8_t (&o);
-//  rc &= test_xdrstdio_u_int8_t (&o);
-//  rc &= test_xdrstdio_uint8_t (&o);
-//  rc &= test_xdrstdio_int16_t (&o);
-//  rc &= test_xdrstdio_u_int16_t (&o);
-//  rc &= test_xdrstdio_uint16_t (&o);
-//  rc &= test_xdrstdio_int32_t (&o);
-//  rc &= test_xdrstdio_u_int32_t (&o);
-//  rc &= test_xdrstdio_uint32_t (&o);
-//  rc &= test_xdrstdio_int64_t (&o);
-//  rc &= test_xdrstdio_u_int64_t (&o);
-//  rc &= test_xdrstdio_uint64_t (&o);
-//  rc &= test_xdrstdio_hyper (&o);
-//  rc &= test_xdrstdio_u_hyper (&o);
-//  rc &= test_xdrstdio_longlong_t (&o);
-//  rc &= test_xdrstdio_u_longlong_t (&o);
-//  rc &= test_xdrstdio_float (&o);
-//  rc &= test_xdrstdio_double (&o);
-//  rc &= test_xdrstdio_bool (&o);
-//  rc &= test_xdrstdio_enum (&o);
-//  rc &= test_xdrstdio_union (&o);
-//  rc &= test_xdrstdio_opaque (&o);
-//  rc &= test_xdrstdio_bytes (&o);
-//  rc &= test_xdrstdio_string (&o);
-//  rc &= test_xdrstdio_wrapstring (&o);
-//  rc &= test_xdrstdio_array (&o);
-//  rc &= test_xdrstdio_vector (&o);
-//  rc &= test_xdrstdio_reference (&o);
-//  rc &= test_xdrstdio_pointer (&o);
-//  rc &= test_xdrstdio_list (&o);
-//  rc &= test_xdrstdio_primitive_struct (&o);
+  rc &= test_xdrstdio_u_int (&o);
+  rc &= test_xdrstdio_long (&o);
+  rc &= test_xdrstdio_u_long (&o);
+  rc &= test_xdrstdio_short (&o);
+  rc &= test_xdrstdio_u_short (&o);
+  rc &= test_xdrstdio_char (&o);
+  rc &= test_xdrstdio_u_char (&o);
+  rc &= test_xdrstdio_int8_t (&o);
+  rc &= test_xdrstdio_u_int8_t (&o);
+  rc &= test_xdrstdio_uint8_t (&o);
+  rc &= test_xdrstdio_int16_t (&o);
+  rc &= test_xdrstdio_u_int16_t (&o);
+  rc &= test_xdrstdio_uint16_t (&o);
+  rc &= test_xdrstdio_int32_t (&o);
+  rc &= test_xdrstdio_u_int32_t (&o);
+  rc &= test_xdrstdio_uint32_t (&o);
+  rc &= test_xdrstdio_int64_t (&o);
+  rc &= test_xdrstdio_u_int64_t (&o);
+  rc &= test_xdrstdio_uint64_t (&o);
+  rc &= test_xdrstdio_hyper (&o);
+  rc &= test_xdrstdio_u_hyper (&o);
+  rc &= test_xdrstdio_longlong_t (&o);
+  rc &= test_xdrstdio_u_longlong_t (&o);
+  rc &= test_xdrstdio_float (&o);
+  rc &= test_xdrstdio_double (&o);
+  rc &= test_xdrstdio_bool (&o);
+  rc &= test_xdrstdio_enum (&o);
+  rc &= test_xdrstdio_union (&o);
+  rc &= test_xdrstdio_opaque (&o);
+  rc &= test_xdrstdio_bytes (&o);
+  rc &= test_xdrstdio_string (&o);
+  rc &= test_xdrstdio_wrapstring (&o);
+  rc &= test_xdrstdio_array (&o);
+  rc &= test_xdrstdio_vector (&o);
+  rc &= test_xdrstdio_reference (&o);
+  rc &= test_xdrstdio_pointer (&o);
+  rc &= test_xdrstdio_list (&o);
+  rc &= test_xdrstdio_primitive_struct (&o);
+
+  if (rc == TRUE)
+    log_msg (o.log, XDR_LOG_NORMAL, "All tests passed!\n");
+  else
+    log_msg (o.log, XDR_LOG_NORMAL, "Some tests failed!\n");
 
   cleanup_tmpdir (&o);
   return (rc == TRUE ? EXIT_SUCCESS : EXIT_FAILURE);
@@ -330,7 +347,6 @@ test_xdrstdio_int (opts * o)
   static const char *testid= "test_xdrstdio_int";
   int i;
   bool_t rv;
-  char buf[80]; /* 20*min size */
   int data[TEST_DATA_SZ];
   xdrstdio_creation_data xdr_data;
   xdr_data.o = o;
@@ -338,1452 +354,743 @@ test_xdrstdio_int (opts * o)
   xdr_data.name = "xdrstdio_int";
   xdr_data.fullname = NULL;
   xdr_data.f = NULL;
+
   for (i=0;i<TEST_DATA_SZ;i++) data[i] = INT_DATA[i];
   rv = test_basic_type_core_xdr_int (o->log, testid, data,
       TEST_DATA_SZ, &xdrstdio_stream_ops, FALSE, (void *)&xdr_data);
   return rv;
 }
 
-// bool_t
-// test_xdrstdio_u_int (opts * o)
-// {
-//   static const char *testid= "test_xdrstdio_u_int";
-//   int i;
-//   char buf[80]; /* 20*min size */
-//   unsigned int data[TEST_DATA_SZ];
-//   xdrstdio_creation_data xdr_data;
-//   xdr_data.o = o;
-//   xdr_data.finish_guard = 0;
-//   xdr_data.buf = &(buf[0]);
-//   xdr_data.buf_sz = 80;
-// 
-//   for (i=0;i<TEST_DATA_SZ;i++) data[i] = UINT_DATA[i];
-//   return test_basic_type_core_xdr_u_int (o->log, testid, data,
-//       TEST_DATA_SZ, &xdrstdio_stream_ops, FALSE, (void *)&xdr_data);
-// }
-// 
-// bool_t
-// test_xdrstdio_long (opts * o)
-// {
-//   static const char *testid= "test_xdrstdio_long";
-//   int i;
-//   char buf[80]; /* TEST_DATA_SZ*min size */
-//   long data[TEST_DATA_SZ];
-//   xdrstdio_creation_data xdr_data;
-//   xdr_data.o = o;
-//   xdr_data.finish_guard = 0;
-//   xdr_data.buf = &(buf[0]);
-//   xdr_data.buf_sz = 80;
-// 
-//   for (i=0;i<TEST_DATA_SZ;i++) data[i] = LONG_DATA[i];
-//   return test_basic_type_core_xdr_long (o->log, testid, data,
-//       TEST_DATA_SZ, &xdrstdio_stream_ops, FALSE, (void *)&xdr_data);
-// }
-// 
-// bool_t
-// test_xdrstdio_u_long (opts * o)
-// {
-//   static const char *testid= "test_xdrstdio_u_long";
-//   int i;
-//   char buf[80]; /* TEST_DATA_SZ*min size */
-//   unsigned long data[TEST_DATA_SZ];
-//   xdrstdio_creation_data xdr_data;
-//   xdr_data.o = o;
-//   xdr_data.finish_guard = 0;
-//   xdr_data.buf = &(buf[0]);
-//   xdr_data.buf_sz = 80;
-// 
-//   for (i=0;i<TEST_DATA_SZ;i++) data[i] = ULONG_DATA[i];
-//   return test_basic_type_core_xdr_u_long (o->log, testid, data,
-//       TEST_DATA_SZ, &xdrstdio_stream_ops, FALSE, (void *)&xdr_data);
-// }
-// 
-// bool_t
-// test_xdrstdio_short (opts * o)
-// {
-//   static const char *testid= "test_xdrstdio_short";
-//   int i;
-//   char buf[80]; /* TEST_DATA_SZ*min size */
-//   short data[TEST_DATA_SZ];
-//   xdrstdio_creation_data xdr_data;
-//   xdr_data.o = o;
-//   xdr_data.finish_guard = 0;
-//   xdr_data.buf = &(buf[0]);
-//   xdr_data.buf_sz = 80;
-// 
-//   for (i=0;i<TEST_DATA_SZ;i++) data[i] = SHORT_DATA[i];
-//   return test_basic_type_core_xdr_short (o->log, testid, data,
-//       TEST_DATA_SZ, &xdrstdio_stream_ops, FALSE, (void *)&xdr_data);
-// }
-// 
-// bool_t
-// test_xdrstdio_u_short (opts * o)
-// {
-//   static const char *testid= "test_xdrstdio_u_short";
-//   int i;
-//   char buf[80]; /* TEST_DATA_SZ*min size */
-//   unsigned short data[TEST_DATA_SZ];
-//   xdrstdio_creation_data xdr_data;
-//   xdr_data.o = o;
-//   xdr_data.finish_guard = 0;
-//   xdr_data.buf = &(buf[0]);
-//   xdr_data.buf_sz = 80;
-// 
-//   for (i=0;i<TEST_DATA_SZ;i++) data[i] = USHORT_DATA[i];
-//   return test_basic_type_core_xdr_u_short (o->log, testid, data,
-//       TEST_DATA_SZ, &xdrstdio_stream_ops, FALSE, (void *)&xdr_data);
-// }
-// 
-// bool_t
-// test_xdrstdio_char (opts * o)
-// {
-//   static const char *testid= "test_xdrstdio_char";
-//   int i;
-//   char buf[80]; /* TEST_DATA_SZ*min size */
-//   char data[TEST_DATA_SZ];
-//   xdrstdio_creation_data xdr_data;
-//   xdr_data.o = o;
-//   xdr_data.finish_guard = 0;
-//   xdr_data.buf = &(buf[0]);
-//   xdr_data.buf_sz = 80;
-// 
-// #if CHAR_MIN < 0
-//   /* char is signed */
-//   for (i=0;i<TEST_DATA_SZ;i++) data[i] = (char)SCHAR_DATA[i];
-// #else
-//     /* char is unsigned */
-//   for (i=0;i<TEST_DATA_SZ;i++) data[i] = (char)UCHAR_DATA[i];
-// #endif
-//   return test_basic_type_core_xdr_char (o->log, testid, data,
-//       TEST_DATA_SZ, &xdrstdio_stream_ops, FALSE, (void *)&xdr_data);
-// }
-// 
-// bool_t
-// test_xdrstdio_u_char (opts * o)
-// {
-//   static const char *testid= "test_xdrstdio_u_char";
-//   int i;
-//   char buf[80]; /* TEST_DATA_SZ*min size */
-//   unsigned char data[TEST_DATA_SZ];
-//   xdrstdio_creation_data xdr_data;
-//   xdr_data.o = o;
-//   xdr_data.finish_guard = 0;
-//   xdr_data.buf = &(buf[0]);
-//   xdr_data.buf_sz = 80;
-// 
-//   for (i=0;i<TEST_DATA_SZ;i++) data[i] = UCHAR_DATA[i];
-//   return test_basic_type_core_xdr_u_char (o->log, testid, data,
-//       TEST_DATA_SZ, &xdrstdio_stream_ops, FALSE, (void *)&xdr_data);
-// }
-// 
-// bool_t
-// test_xdrstdio_int8_t (opts * o)
-// {
-//   static const char *testid= "test_xdrstdio_int8_t";
-//   int i;
-//   char buf[80]; /* TEST_DATA_SZ*min size */
-//   int8_t data[TEST_DATA_SZ];
-//   xdrstdio_creation_data xdr_data;
-//   xdr_data.o = o;
-//   xdr_data.finish_guard = 0;
-//   xdr_data.buf = &(buf[0]);
-//   xdr_data.buf_sz = 80;
-// 
-//   for (i=0;i<TEST_DATA_SZ;i++) data[i] = INT8_DATA[i];
-//   return test_basic_type_core_xdr_char (o->log, testid, data,
-//       TEST_DATA_SZ, &xdrstdio_stream_ops, FALSE, (void *)&xdr_data);
-// }
-// 
-// bool_t
-// test_xdrstdio_u_int8_t (opts * o)
-// {
-//   static const char *testid= "test_xdrstdio_u_int8_t";
-//   int i;
-//   char buf[80]; /* TEST_DATA_SZ*min size */
-//   u_int8_t data[TEST_DATA_SZ];
-//   xdrstdio_creation_data xdr_data;
-//   xdr_data.o = o;
-//   xdr_data.finish_guard = 0;
-//   xdr_data.buf = &(buf[0]);
-//   xdr_data.buf_sz = 80;
-// 
-//   for (i=0;i<TEST_DATA_SZ;i++) data[i] = UINT8_DATA[i];
-//   return test_basic_type_core_xdr_u_int8_t (o->log, testid, data,
-//       TEST_DATA_SZ, &xdrstdio_stream_ops, FALSE, (void *)&xdr_data);
-// }
-// 
-// bool_t
-// test_xdrstdio_uint8_t (opts * o)
-// {
-//   static const char *testid= "test_xdrstdio_uint8_t";
-//   int i;
-//   char buf[80]; /* TEST_DATA_SZ*min size */
-//   u_int8_t data[TEST_DATA_SZ];
-//   xdrstdio_creation_data xdr_data;
-//   xdr_data.o = o;
-//   xdr_data.finish_guard = 0;
-//   xdr_data.buf = &(buf[0]);
-//   xdr_data.buf_sz = 80;
-// 
-//   for (i=0;i<TEST_DATA_SZ;i++) data[i] = UINT8_DATA[i];
-//   return test_basic_type_core_xdr_uint8_t (o->log, testid, data,
-//       TEST_DATA_SZ, &xdrstdio_stream_ops, FALSE, (void *)&xdr_data);
-// }
-// 
-// bool_t
-// test_xdrstdio_int16_t (opts * o)
-// {
-//   static const char *testid= "test_xdrstdio_int16_t";
-//   int i;
-//   char buf[80]; /* TEST_DATA_SZ*min size */
-//   int16_t data[TEST_DATA_SZ];
-//   xdrstdio_creation_data xdr_data;
-//   xdr_data.o = o;
-//   xdr_data.finish_guard = 0;
-//   xdr_data.buf = &(buf[0]);
-//   xdr_data.buf_sz = 80;
-// 
-//   for (i=0;i<TEST_DATA_SZ;i++) data[i] = INT16_DATA[i];
-//   return test_basic_type_core_xdr_int16_t (o->log, testid, data,
-//       TEST_DATA_SZ, &xdrstdio_stream_ops, FALSE, (void *)&xdr_data);
-// }
-// 
-// bool_t
-// test_xdrstdio_u_int16_t (opts * o)
-// {
-//   static const char *testid= "test_xdrstdio_u_int16_t";
-//   int i;
-//   char buf[80]; /* TEST_DATA_SZ*min size */
-//   u_int16_t data[TEST_DATA_SZ];
-//   xdrstdio_creation_data xdr_data;
-//   xdr_data.o = o;
-//   xdr_data.finish_guard = 0;
-//   xdr_data.buf = &(buf[0]);
-//   xdr_data.buf_sz = 80;
-// 
-//   for (i=0;i<TEST_DATA_SZ;i++) data[i] = UINT16_DATA[i];
-//   return test_basic_type_core_xdr_u_int16_t (o->log, testid, data,
-//       TEST_DATA_SZ, &xdrstdio_stream_ops, FALSE, (void *)&xdr_data);
-// }
-// 
-// bool_t
-// test_xdrstdio_uint16_t (opts * o)
-// {
-//   static const char *testid= "test_xdrstdio_uint16_t";
-//   int i;
-//   char buf[80]; /* TEST_DATA_SZ*min size */
-//   u_int16_t data[TEST_DATA_SZ];
-//   xdrstdio_creation_data xdr_data;
-//   xdr_data.o = o;
-//   xdr_data.finish_guard = 0;
-//   xdr_data.buf = &(buf[0]);
-//   xdr_data.buf_sz = 80;
-// 
-//   for (i=0;i<TEST_DATA_SZ;i++) data[i] = UINT16_DATA[i];
-//   return test_basic_type_core_xdr_uint16_t (o->log, testid, data,
-//       TEST_DATA_SZ, &xdrstdio_stream_ops, FALSE, (void *)&xdr_data);
-// }
-// 
-// bool_t
-// test_xdrstdio_int32_t (opts * o)
-// {
-//   static const char *testid= "test_xdrstdio_int32_t";
-//   int i;
-//   char buf[80]; /* TEST_DATA_SZ*min size */
-//   int32_t data[TEST_DATA_SZ];
-//   xdrstdio_creation_data xdr_data;
-//   xdr_data.o = o;
-//   xdr_data.finish_guard = 0;
-//   xdr_data.buf = &(buf[0]);
-//   xdr_data.buf_sz = 80;
-// 
-//   for (i=0;i<TEST_DATA_SZ;i++) data[i] = INT32_DATA[i];
-//   return test_basic_type_core_xdr_int32_t (o->log, testid, data,
-//       TEST_DATA_SZ, &xdrstdio_stream_ops, FALSE, (void *)&xdr_data);
-// }
-// 
-// bool_t
-// test_xdrstdio_u_int32_t (opts * o)
-// {
-//   static const char *testid= "test_xdrstdio_u_int32_t";
-//   int i;
-//   char buf[80]; /* TEST_DATA_SZ*min size */
-//   u_int32_t data[TEST_DATA_SZ];
-//   xdrstdio_creation_data xdr_data;
-//   xdr_data.o = o;
-//   xdr_data.finish_guard = 0;
-//   xdr_data.buf = &(buf[0]);
-//   xdr_data.buf_sz = 80;
-// 
-//   for (i=0;i<TEST_DATA_SZ;i++) data[i] = UINT32_DATA[i];
-//   return test_basic_type_core_xdr_u_int32_t (o->log, testid, data,
-//       TEST_DATA_SZ, &xdrstdio_stream_ops, FALSE, (void *)&xdr_data);
-// }
-// 
-// bool_t
-// test_xdrstdio_uint32_t (opts * o)
-// {
-//   static const char *testid= "test_xdrstdio_uint32_t";
-//   int i;
-//   char buf[80]; /* TEST_DATA_SZ*min size */
-//   u_int32_t data[TEST_DATA_SZ];
-//   xdrstdio_creation_data xdr_data;
-//   xdr_data.o = o;
-//   xdr_data.finish_guard = 0;
-//   xdr_data.buf = &(buf[0]);
-//   xdr_data.buf_sz = 80;
-// 
-//   for (i=0;i<TEST_DATA_SZ;i++) data[i] = UINT32_DATA[i];
-//   return test_basic_type_core_xdr_uint32_t (o->log, testid, data,
-//       TEST_DATA_SZ, &xdrstdio_stream_ops, FALSE, (void *)&xdr_data);
-// }
-// 
-// bool_t
-// test_xdrstdio_int64_t (opts * o)
-// {
-//   static const char *testid= "test_xdrstdio_int64_t";
-//   int i;
-//   char buf[160]; /* TEST_DATA_SZ*8 */
-//   int64_t data[TEST_DATA_SZ];
-//   xdrstdio_creation_data xdr_data;
-//   xdr_data.o = o;
-//   xdr_data.finish_guard = 0;
-//   xdr_data.buf = &(buf[0]);
-//   xdr_data.buf_sz = 160;
-// 
-//   for (i=0;i<TEST_DATA_SZ;i++) data[i] = INT64_DATA[i];
-//   return test_basic_type_core_xdr_int64_t (o->log, testid, data,
-//       TEST_DATA_SZ, &xdrstdio_stream_ops, FALSE, (void *)&xdr_data);
-// }
-// 
-// bool_t
-// test_xdrstdio_u_int64_t (opts * o)
-// {
-//   static const char *testid= "test_xdrstdio_u_int64_t";
-//   int i;
-//   char buf[160]; /* TEST_DATA_SZ*8 */
-//   u_int64_t data[TEST_DATA_SZ];
-//   xdrstdio_creation_data xdr_data;
-//   xdr_data.o = o;
-//   xdr_data.finish_guard = 0;
-//   xdr_data.buf = &(buf[0]);
-//   xdr_data.buf_sz = 160;
-// 
-//   for (i=0;i<TEST_DATA_SZ;i++) data[i] = UINT64_DATA[i];
-//   return test_basic_type_core_xdr_u_int64_t (o->log, testid, data,
-//       TEST_DATA_SZ, &xdrstdio_stream_ops, FALSE, (void *)&xdr_data);
-// }
-// 
-// bool_t
-// test_xdrstdio_uint64_t (opts * o)
-// {
-//   static const char *testid= "test_xdrstdio_uint64_t";
-//   int i;
-//   char buf[160]; /* TEST_DATA_SZ*8 */
-//   u_int64_t data[TEST_DATA_SZ];
-//   xdrstdio_creation_data xdr_data;
-//   xdr_data.o = o;
-//   xdr_data.finish_guard = 0;
-//   xdr_data.buf = &(buf[0]);
-//   xdr_data.buf_sz = 160;
-// 
-//   for (i=0;i<TEST_DATA_SZ;i++) data[i] = UINT64_DATA[i];
-//   return test_basic_type_core_xdr_uint64_t (o->log, testid, data,
-//       TEST_DATA_SZ, &xdrstdio_stream_ops, FALSE, (void *)&xdr_data);
-// }
-// 
-// bool_t
-// test_xdrstdio_hyper (opts * o)
-// {
-//   static const char *testid= "test_xdrstdio_hyper";
-//   int i;
-//   char buf[160]; /* TEST_DATA_SZ*8 */
-//   quad_t data[TEST_DATA_SZ];
-//   xdrstdio_creation_data xdr_data;
-//   xdr_data.o = o;
-//   xdr_data.finish_guard = 0;
-//   xdr_data.buf = &(buf[0]);
-//   xdr_data.buf_sz = 160;
-// 
-//   for (i=0;i<TEST_DATA_SZ;i++) data[i] = HYPER_DATA[i];
-//   return test_basic_type_core_xdr_hyper (o->log, testid, data,
-//       TEST_DATA_SZ, &xdrstdio_stream_ops, FALSE, (void *)&xdr_data);
-// }
-// 
-// bool_t
-// test_xdrstdio_u_hyper (opts * o)
-// {
-//   static const char *testid= "test_xdrstdio_u_hyper";
-//   int i;
-//   char buf[160]; /* TEST_DATA_SZ*8 */
-//   u_quad_t data[TEST_DATA_SZ];
-//   xdrstdio_creation_data xdr_data;
-//   xdr_data.o = o;
-//   xdr_data.finish_guard = 0;
-//   xdr_data.buf = &(buf[0]);
-//   xdr_data.buf_sz = 160;
-// 
-//   for (i=0;i<TEST_DATA_SZ;i++) data[i] = UHYPER_DATA[i];
-//   return test_basic_type_core_xdr_u_hyper (o->log, testid, data,
-//       TEST_DATA_SZ, &xdrstdio_stream_ops, FALSE, (void *)&xdr_data);
-// }
-// 
-// bool_t
-// test_xdrstdio_longlong_t (opts * o)
-// {
-//   static const char *testid= "test_xdrstdio_longlong_t";
-//   int i;
-//   char buf[160]; /* TEST_DATA_SZ*8 */
-//   quad_t data[TEST_DATA_SZ];
-//   xdrstdio_creation_data xdr_data;
-//   xdr_data.o = o;
-//   xdr_data.finish_guard = 0;
-//   xdr_data.buf = &(buf[0]);
-//   xdr_data.buf_sz = 160;
-// 
-//   for (i=0;i<TEST_DATA_SZ;i++) data[i] = LONGLONG_DATA[i];
-//   return test_basic_type_core_xdr_longlong_t (o->log, testid, data,
-//       TEST_DATA_SZ, &xdrstdio_stream_ops, FALSE, (void *)&xdr_data);
-// }
-// 
-// bool_t
-// test_xdrstdio_u_longlong_t (opts * o)
-// {
-//   static const char *testid= "test_xdrstdio_u_longlong_t";
-//   int i;
-//   char buf[160]; /* TEST_DATA_SZ*8 */
-//   u_quad_t data[TEST_DATA_SZ];
-//   xdrstdio_creation_data xdr_data;
-//   xdr_data.o = o;
-//   xdr_data.finish_guard = 0;
-//   xdr_data.buf = &(buf[0]);
-//   xdr_data.buf_sz = 160;
-// 
-//   for (i=0;i<TEST_DATA_SZ;i++) data[i] = ULONGLONG_DATA[i];
-//   return test_basic_type_core_xdr_u_longlong_t (o->log, testid, data,
-//       TEST_DATA_SZ, &xdrstdio_stream_ops, FALSE, (void *)&xdr_data);
-// }
-// 
-// bool_t
-// test_xdrstdio_float (opts * o)
-// {
-//   static const char *testid= "test_xdrstdio_float";
-//   int i;
-//   char buf[80]; /* TEST_DATA_SZ*4 */
-//   float data[TEST_DATA_SZ];
-//   xdrstdio_creation_data xdr_data;
-//   xdr_data.o = o;
-//   xdr_data.finish_guard = 0;
-//   xdr_data.buf = &(buf[0]);
-//   xdr_data.buf_sz = 80;
-// 
-//   init_float_data (data);
-//   return test_basic_type_core_xdr_float (o->log, testid, data,
-//       TEST_DATA_SZ, &xdrstdio_stream_ops, FALSE, (void *)&xdr_data);
-// }
-// 
-// bool_t
-// test_xdrstdio_double (opts * o)
-// {
-//   static const char *testid= "test_xdrstdio_double";
-//   int i;
-//   char buf[160]; /* TEST_DATA_SZ*8 */
-//   double data[TEST_DATA_SZ];
-//   xdrstdio_creation_data xdr_data;
-//   xdr_data.o = o;
-//   xdr_data.finish_guard = 0;
-//   xdr_data.buf = &(buf[0]);
-//   xdr_data.buf_sz = 160;
-// 
-//   init_double_data (data);
-//   return test_basic_type_core_xdr_double (o->log, testid, data,
-//       TEST_DATA_SZ, &xdrstdio_stream_ops, FALSE, (void *)&xdr_data);
-// }
-// 
-// bool_t
-// test_xdrstdio_bool (opts * o)
-// {
-//   static const char *testid= "test_xdrstdio_bool";
-//   int i;
-//   char buf[80]; /* TEST_DATA_SZ*min size */
-//   bool_t data[TEST_DATA_SZ];
-//   xdrstdio_creation_data xdr_data;
-//   xdr_data.o = o;
-//   xdr_data.finish_guard = 0;
-//   xdr_data.buf = &(buf[0]);
-//   xdr_data.buf_sz = 80;
-// 
-//   for (i=0;i<TEST_DATA_SZ;i++) data[i] = BOOL_DATA[i];
-//   return test_basic_type_core_xdr_bool (o->log, testid, data,
-//       TEST_DATA_SZ, &xdrstdio_stream_ops, FALSE, (void *)&xdr_data);
-// }
-// 
-// bool_t
-// test_xdrstdio_enum (opts * o)
-// {
-//   static const char *testid= "test_xdrstdio_enum";
-//   int i;
-//   char buf[80]; /* TEST_DATA_SZ*min size */
-//   test_enum_t data[TEST_DATA_SZ];
-//   xdrstdio_creation_data xdr_data;
-//   xdr_data.o = o;
-//   xdr_data.finish_guard = 0;
-//   xdr_data.buf = &(buf[0]);
-//   xdr_data.buf_sz = 80;
-// 
-//   for (i=0;i<TEST_DATA_SZ;i++) data[i] = ENUM_DATA[i];
-//   return test_basic_type_core_xdr_enum (o->log, testid, (enum_t*) data,
-//       TEST_DATA_SZ, &xdrstdio_stream_ops, FALSE, (void *)&xdr_data);
-// }
-// 
-// bool_t
-// test_xdrstdio_union (opts * o)
-// {
-//   static const char *testid= "test_xdrstdio_union";
-//   /* size of a xdr'ed union depends on what branch 
-//      is active. Therefore, the size of an array of
-//      unions...is difficult to determine a priori.
-//      Perhaps using a separate xdr_sizeof phase?
-//      However, for this test data set we have exactly:
-//   */
-//   char buf[188];
-//   int buf_sz = 188;
-//   test_discrim_union_t data[TEST_DATA_SZ];
-//   XDR xdr_enc;
-//   XDR xdr_dec;
-//   int cnt;
-//   bool_t pass = TRUE;
-// 
-//   init_union_data (UNION_DATA);
-//   init_union_data (data);
-//   log_msg (o->log, XDR_LOG_DETAIL, "%s: Entering test.\n", testid);
-//   xdrstdio_create (&xdr_enc, buf, buf_sz, XDR_ENCODE);
-// 
-//   for (cnt = 0; cnt < TEST_DATA_SZ && pass == TRUE; cnt++)
-//     pass &= encode_union_data (testid, o->log, &xdr_enc, cnt, &data[cnt]);
-//   if (pass != TRUE) goto test_xdrstdio_union_end;
-// 
-//   if (xdr_union (&xdr_enc, (enum_t *)&(data[0].type), 
-//                  (char *)&(data[0].value), test_union_dscrim, NULL_xdrproc_t))
-//     {
-//       log_msg (o->log, XDR_LOG_INFO,
-//                "%s: unexpected pass xdr_union XDR_ENCODE\n", testid);
-//       pass = FALSE;
-//       goto test_xdrstdio_union_end;
-//     }
-// 
-//   if (o->log->level >= XDR_LOG_DEBUG)
-//     dumpmem (o->log->f, buf, buf_sz, 0);
-//  
-//   for (cnt = 0; cnt < TEST_DATA_SZ; cnt++)
-//     {
-//       data[cnt].value.u32 = 0;
-//       data[cnt].type = TEST_UNION_UI32;
-//     }
-// 
-//   xdrstdio_create (&xdr_dec, buf, buf_sz, XDR_DECODE);                \
-//   for (cnt = 0; cnt < TEST_DATA_SZ && pass == TRUE; cnt++)
-//       pass &= decode_union_data (testid, o->log, &xdr_dec, cnt, &data[cnt]);
-//   if (pass != TRUE) goto test_xdrstdio_union_end;
-// 
-//   if (xdr_union (&xdr_dec, (enum_t *)&(data[0].type),
-//                  (char *)&(data[0].value), test_union_dscrim, NULL_xdrproc_t))
-//     {
-//       log_msg (o->log, XDR_LOG_INFO,
-//                "%s: unexpected pass xdr_union XDR_DECODE\n", testid);
-//       pass = FALSE;
-//       goto test_xdrstdio_union_end2;
-//     }
-// 
-//   pass = compare_union_data (testid, o->log, UNION_DATA, data);
-// test_xdrstdio_union_end2:
-//   XDR_DESTROY (&xdr_dec);
-// test_xdrstdio_union_end:
-//   XDR_DESTROY (&xdr_enc);
-//   if (pass == TRUE)
-//     log_msg (o->log, XDR_LOG_NORMAL, "%s: PASS\n", testid);
-//   else
-//     log_msg (o->log, XDR_LOG_NORMAL, "%s: FAIL\n", testid);
-//   return pass;
-// }
-// 
-// bool_t
-// test_xdrstdio_opaque (opts * o)
-// {
-//   static const char *testid= "test_xdrstdio_opaque";
-//   char buf[OPAQUE_DATA_SZ + (BYTES_PER_XDR_UNIT - (OPAQUE_DATA_SZ % BYTES_PER_XDR_UNIT))];
-//   int buf_sz = OPAQUE_DATA_SZ + (BYTES_PER_XDR_UNIT - (OPAQUE_DATA_SZ % BYTES_PER_XDR_UNIT));
-//   char data[OPAQUE_DATA_SZ];
-//   int data_sz = OPAQUE_DATA_SZ;
-//   XDR xdr_enc;
-//   XDR xdr_dec;
-//   int cnt;
-//   bool_t pass = TRUE;
-// 
-//   for (cnt = 0; cnt < OPAQUE_DATA_SZ; cnt++)
-//     data[cnt] = OPAQUE_DATA[cnt];
-// 
-//   log_msg (o->log, XDR_LOG_DETAIL, "%s: Entering test.\n", testid);
-//   xdrstdio_create (&xdr_enc, buf, buf_sz, XDR_ENCODE);
-// 
-//   if (!xdr_opaque (&xdr_enc, data, data_sz))
-//     {
-//       log_msg (o->log, XDR_LOG_INFO,
-//                "%s: failed xdr_opaque XDR_ENCODE\n",
-//                testid);
-//       pass = FALSE; 
-//       goto test_xdrstdio_opaque_end;
-//     }
-// 
-//   if (o->log->level >= XDR_LOG_DEBUG)
-//     dumpmem (o->log->f, buf, buf_sz, 0);
-// 
-//   for (cnt = 0; cnt < OPAQUE_DATA_SZ; cnt++)
-//     data[cnt] = 0;
-// 
-//   xdrstdio_create (&xdr_dec, buf, buf_sz, XDR_DECODE);
-//   if (!xdr_opaque (&xdr_dec, data, data_sz))
-//     {
-//       log_msg (o->log, XDR_LOG_INFO,
-//                "%s: failed xdr_opaque XDR_DECODE\n",
-//                testid);
-//       pass = FALSE; 
-//       goto test_xdrstdio_opaque_end2;
-//     }
-// 
-//   for (cnt = 0; cnt < OPAQUE_DATA_SZ && pass == TRUE; cnt++)
-//     {
-//       pass &= (data[cnt] == OPAQUE_DATA[cnt]);
-//       if (pass != TRUE)
-//         {
-//           log_msg (o->log, XDR_LOG_INFO,
-//                    "%s: failed xdr_opaque compare: (cnt=%d, exp=0x%02x, val=0x%02x)\n",
-//                    testid, cnt, OPAQUE_DATA[cnt], data[cnt]);
-//           pass = FALSE;
-//           goto test_xdrstdio_opaque_end2;
-//         }
-//     }
-// 
-// test_xdrstdio_opaque_end2:
-//   XDR_DESTROY (&xdr_dec);
-// test_xdrstdio_opaque_end:
-//   XDR_DESTROY (&xdr_enc);
-//   if (pass == TRUE)
-//     log_msg (o->log, XDR_LOG_NORMAL, "%s: PASS\n", testid);
-//   else
-//     log_msg (o->log, XDR_LOG_NORMAL, "%s: FAIL\n", testid);
-//   return pass;
-// }
-// 
-// bool_t
-// test_xdrstdio_bytes (opts * o)
-// {
-//   static const char *testid= "test_xdrstdio_bytes";
-// #define MAX_BYTES_SZ 128
-//   char buf[MAX_BYTES_SZ + BYTES_PER_XDR_UNIT];
-//   int buf_sz = MAX_BYTES_SZ + BYTES_PER_XDR_UNIT;
-//   char *data = NULL;
-//   int data_sz = OPAQUE_DATA_SZ;
-//   char *p = NULL;
-//   XDR xdr_enc;
-//   XDR xdr_dec;
-//   int cnt;
-//   bool_t pass = TRUE;
-// 
-//   data = (char *)malloc(data_sz * sizeof(char));
-//   for (cnt = 0; cnt < OPAQUE_DATA_SZ; cnt++)
-//     data[cnt] = OPAQUE_DATA[cnt];
-//   memset (buf, 0, buf_sz);
-// 
-//   log_msg (o->log, XDR_LOG_DETAIL, "%s: Entering test.\n", testid);
-// 
-//   xdrstdio_create (&xdr_enc, buf, buf_sz, XDR_ENCODE);
-//   if (!xdr_bytes (&xdr_enc, (char **)&data, &data_sz, MAX_BYTES_SZ))
-//     {
-//       log_msg (o->log, XDR_LOG_INFO,
-//                "%s: failed xdr_bytes XDR_ENCODE\n",
-//                testid);
-//       pass = FALSE; 
-//       goto test_xdrstdio_bytes_end;
-//     }
-// 
-//   if (o->log->level >= XDR_LOG_DEBUG)
-//     dumpmem (o->log->f, buf, buf_sz, 0);
-// 
-//   for (cnt = 0; cnt < OPAQUE_DATA_SZ; cnt++)
-//     data[cnt] = 0;
-//   data_sz = 0;
-// 
-// 
-//   /* decode into static buffer */
-//   xdrstdio_create (&xdr_dec, buf, buf_sz, XDR_DECODE);
-//   if (!xdr_bytes (&xdr_dec, (char **)&data, &data_sz, MAX_BYTES_SZ))
-//     {
-//       log_msg (o->log, XDR_LOG_INFO,
-//                "%s: failed xdr_bytes XDR_DECODE\n",
-//                testid);
-//       pass = FALSE;
-//       goto test_xdrstdio_bytes_end2;
-//     }
-//   
-//   /* check decoded size */
-//   if (data_sz != OPAQUE_DATA_SZ)
-//     {
-//       log_msg (o->log, XDR_LOG_INFO,
-//                "%s: failed xdr_bytes XDR_DECODE (size: exp=%d, val=%d)\n",
-//                testid, OPAQUE_DATA_SZ, data_sz);
-//       pass = FALSE;
-//       goto test_xdrstdio_bytes_end2;
-//     }
-// 
-//   /* check decoded bytes */
-//   for (cnt = 0; cnt < OPAQUE_DATA_SZ && pass == TRUE; cnt++)
-//     {
-//       pass &= (data[cnt] == OPAQUE_DATA[cnt]);
-//       if (pass != TRUE)
-//         {
-//           log_msg (o->log, XDR_LOG_INFO,
-//                    "%s: failed xdr_bytes compare: (cnt=%d, exp=0x%02x, val=0x%02x)\n",
-//                    testid, cnt, OPAQUE_DATA[cnt], data[cnt]);
-//           pass = FALSE;
-//           goto test_xdrstdio_bytes_end2;
-//         }
-//     }
-//   XDR_DESTROY (&xdr_dec);
-// 
-//   /* decode into allocated buffer */
-//   xdrstdio_create (&xdr_dec, buf, buf_sz, XDR_DECODE);
-//   if (!xdr_bytes (&xdr_dec, &p, &data_sz, MAX_BYTES_SZ))
-//     {
-//       log_msg (o->log, XDR_LOG_INFO,
-//                "%s: failed xdr_bytes (allocated) XDR_DECODE\n",
-//                testid);
-//       pass = FALSE;
-//       goto test_xdrstdio_bytes_end2;
-//     }
-//   
-//   /* check decoded size */
-//   if (data_sz != OPAQUE_DATA_SZ)
-//     {
-//       log_msg (o->log, XDR_LOG_INFO,
-//                "%s: failed xdr_bytes (allocated) XDR_DECODE (size: exp=%d, val=%d)\n",
-//                testid, OPAQUE_DATA_SZ, data_sz);
-//       pass = FALSE;
-//       goto test_xdrstdio_bytes_end2;
-//     }
-// 
-//   /* check decoded bytes */
-//   for (cnt = 0; cnt < OPAQUE_DATA_SZ && pass == TRUE; cnt++)
-//     {
-//       pass &= (p[cnt] == OPAQUE_DATA[cnt]);
-//       if (pass != TRUE)
-//         {
-//           log_msg (o->log, XDR_LOG_INFO,
-//                    "%s: failed xdr_bytes (allocated) compare: (cnt=%d, exp=0x%02x, val=0x%02x)\n",
-//                    testid, cnt, OPAQUE_DATA[cnt], p[cnt]);
-//           pass = FALSE;
-//           goto test_xdrstdio_bytes_end2;
-//         }
-//     }
-// 
-// test_xdrstdio_bytes_end2:
-//   XDR_DESTROY (&xdr_dec);
-// test_xdrstdio_bytes_end:
-//   XDR_DESTROY (&xdr_enc);
-//   if (p)    { free (p); p = NULL; }
-//   if (data) { free (data); data = NULL; }
-//   if (pass == TRUE)
-//     log_msg (o->log, XDR_LOG_NORMAL, "%s: PASS\n", testid);
-//   else
-//     log_msg (o->log, XDR_LOG_NORMAL, "%s: FAIL\n", testid);
-//   return pass;
-// }
-// 
-// bool_t
-// test_xdrstdio_string (opts * o)
-// {
-//   static const char *testid= "test_xdrstdio_string";
-// #define MAX_STRING_SZ 128
-//   char buf[MAX_STRING_SZ + BYTES_PER_XDR_UNIT];
-//   int buf_sz = MAX_STRING_SZ + BYTES_PER_XDR_UNIT;
-//   const char * STRING_DATA = "This is a test string. It is fairly short.";
-//   const int STRING_DATA_SZ = strlen (STRING_DATA);
-//   char *data = NULL;
-//   char *p = NULL;
-//   XDR xdr_enc;
-//   XDR xdr_dec;
-//   int cnt;
-//   bool_t pass = TRUE;
-// 
-//   data = (char *)malloc((MAX_STRING_SZ + 1)* sizeof(char));
-//   strncpy (data, STRING_DATA, MAX_STRING_SZ + 1);
-//   memset (buf, 0, buf_sz);
-// 
-//   log_msg (o->log, XDR_LOG_DETAIL, "%s: Entering test.\n", testid);
-// 
-//   xdrstdio_create (&xdr_enc, buf, buf_sz, XDR_ENCODE);
-//   if (!xdr_string (&xdr_enc, &data, MAX_STRING_SZ))
-//     {
-//       log_msg (o->log, XDR_LOG_INFO,
-//                "%s: failed xdr_string XDR_ENCODE\n",
-//                testid);
-//       pass = FALSE; 
-//       goto test_xdrstdio_string_end;
-//     }
-// 
-//   if (o->log->level >= XDR_LOG_DEBUG)
-//     dumpmem (o->log->f, buf, buf_sz, 0);
-// 
-//   for (cnt = 0; cnt < MAX_STRING_SZ + 1; cnt++)
-//     data[cnt] = 0;
-// 
-// 
-//   /* decode into static buffer */
-//   xdrstdio_create (&xdr_dec, buf, buf_sz, XDR_DECODE);
-//   if (!xdr_string (&xdr_dec, &data, MAX_STRING_SZ))
-//     {
-//       log_msg (o->log, XDR_LOG_INFO,
-//                "%s: failed xdr_string XDR_DECODE\n",
-//                testid);
-//       pass = FALSE;
-//       goto test_xdrstdio_string_end2;
-//     }
-//   
-//   /* check decoded string */
-//   if (strncmp (data, STRING_DATA, MAX_STRING_SZ + 1) != 0)
-//     {
-//       log_msg (o->log, XDR_LOG_INFO,
-//                "%s: failed xdr_string compare: (exp='%s', val='%s')\n",
-//                testid, STRING_DATA, data);
-//       pass = FALSE;
-//       goto test_xdrstdio_string_end2;
-//     }
-//   XDR_DESTROY (&xdr_dec);
-// 
-//   /* decode into allocated buffer */
-//   xdrstdio_create (&xdr_dec, buf, buf_sz, XDR_DECODE);
-//   if (!xdr_string (&xdr_dec, &p, MAX_STRING_SZ))
-//     {
-//       log_msg (o->log, XDR_LOG_INFO,
-//                "%s: failed xdr_string (allocated) XDR_DECODE\n",
-//                testid);
-//       pass = FALSE;
-//       goto test_xdrstdio_string_end2;
-//     }
-//   
-//   /* check decoded string */
-//   if (strncmp (p, STRING_DATA, MAX_STRING_SZ + 1) != 0)
-//     {
-//       log_msg (o->log, XDR_LOG_INFO,
-//                "%s: failed xdr_string (allocated) compare: (exp='%s', val='%s')\n",
-//                testid, STRING_DATA, p);
-//       pass = FALSE;
-//       goto test_xdrstdio_string_end2;
-//     }
-// 
-// test_xdrstdio_string_end2:
-//   XDR_DESTROY (&xdr_dec);
-// test_xdrstdio_string_end:
-//   XDR_DESTROY (&xdr_enc);
-//   if (p)    { free (p); p = NULL; }
-//   if (data) { free (data); data = NULL; }
-//   if (pass == TRUE)
-//     log_msg (o->log, XDR_LOG_NORMAL, "%s: PASS\n", testid);
-//   else
-//     log_msg (o->log, XDR_LOG_NORMAL, "%s: FAIL\n", testid);
-//   return pass;
-// }
-// 
-// bool_t
-// test_xdrstdio_wrapstring (opts * o)
-// {
-//   static const char *testid= "test_xdrstdio_wrapstring";
-// #define MAX_STRING_SZ 128
-//   char buf[MAX_STRING_SZ + BYTES_PER_XDR_UNIT];
-//   int buf_sz = MAX_STRING_SZ + BYTES_PER_XDR_UNIT;
-//   const char * STRING_DATA = "This is a test string. It is fairly short.";
-//   const int STRING_DATA_SZ = strlen (STRING_DATA);
-//   char *data = NULL;
-//   char *p = NULL;
-//   XDR xdr_enc;
-//   XDR xdr_dec;
-//   int cnt;
-//   bool_t pass = TRUE;
-// 
-//   data = (char *)malloc((MAX_STRING_SZ + 1)* sizeof(char));
-//   strncpy (data, STRING_DATA, MAX_STRING_SZ + 1);
-//   memset (buf, 0, buf_sz);
-// 
-//   log_msg (o->log, XDR_LOG_DETAIL, "%s: Entering test.\n", testid);
-// 
-//   xdrstdio_create (&xdr_enc, buf, buf_sz, XDR_ENCODE);
-//   if (!xdr_wrapstring (&xdr_enc, &data))
-//     {
-//       log_msg (o->log, XDR_LOG_INFO,
-//                "%s: failed xdr_wrapstring XDR_ENCODE\n",
-//                testid);
-//       pass = FALSE; 
-//       goto test_xdrstdio_wrapstring_end;
-//     }
-// 
-//   if (o->log->level >= XDR_LOG_DEBUG)
-//     dumpmem (o->log->f, buf, buf_sz, 0);
-// 
-//   /* decode into allocated buffer */
-//   xdrstdio_create (&xdr_dec, buf, buf_sz, XDR_DECODE);
-//   if (!xdr_wrapstring (&xdr_dec, &p))
-//     {
-//       log_msg (o->log, XDR_LOG_INFO,
-//                "%s: failed xdr_wrapstring (allocated) XDR_DECODE\n",
-//                testid);
-//       pass = FALSE;
-//       goto test_xdrstdio_wrapstring_end2;
-//     }
-//   
-//   /* check decoded string */
-//   if (strncmp (p, STRING_DATA, MAX_STRING_SZ + 1) != 0)
-//     {
-//       log_msg (o->log, XDR_LOG_INFO,
-//                "%s: failed xdr_wrapstring (allocated) compare: (exp='%s', val='%s')\n",
-//                testid, STRING_DATA, p);
-//       pass = FALSE;
-//       goto test_xdrstdio_wrapstring_end2;
-//     }
-// 
-// test_xdrstdio_wrapstring_end2:
-//   XDR_DESTROY (&xdr_dec);
-// test_xdrstdio_wrapstring_end:
-//   XDR_DESTROY (&xdr_enc);
-//   if (p)    { free (p); p = NULL; }
-//   if (data) { free (data); data = NULL; }
-//   if (pass == TRUE)
-//     log_msg (o->log, XDR_LOG_NORMAL, "%s: PASS\n", testid);
-//   else
-//     log_msg (o->log, XDR_LOG_NORMAL, "%s: FAIL\n", testid);
-//   return pass;
-// }
-// 
-// bool_t
-// test_xdrstdio_array (opts * o)
-// {
-//   static const char *testid= "test_xdrstdio_array";
-//   /* use INT16_DATA as the array data source */
-//   /* also test XDR_FREE filter */
-//   char buf[BYTES_PER_XDR_UNIT + TEST_DATA_SZ * BYTES_PER_XDR_UNIT];
-//   int buf_sz = BYTES_PER_XDR_UNIT + TEST_DATA_SZ * BYTES_PER_XDR_UNIT;
-//   int16_t * data;
-//   int data_sz = TEST_DATA_SZ;
-// 
-//   int16_t *p = NULL;
-//   int p_sz = 0;
-// 
-//   XDR xdr_enc;
-//   XDR xdr_dec;
-//   XDR xdr_destroy;
-//   int cnt;
-//   bool_t pass = TRUE;
-// 
-//   data = (int16_t *) malloc (data_sz * sizeof(int16_t));
-//   for (cnt = 0; cnt < data_sz; cnt++)
-//     data[cnt] = INT16_DATA[cnt];
-//   memset (buf, 0, buf_sz);
-// 
-//   log_msg (o->log, XDR_LOG_DETAIL, "%s: Entering test.\n", testid);
-// 
-//   xdrstdio_create (&xdr_enc, buf, buf_sz, XDR_ENCODE);
-//   if (!xdr_array (&xdr_enc, (char **)&data, &data_sz, TEST_DATA_SZ + 7, sizeof(int16_t), (xdrproc_t)xdr_int16_t))
-//     {
-//       log_msg (o->log, XDR_LOG_INFO,
-//                "%s: failed xdr_array XDR_ENCODE\n",
-//                testid);
-//       pass = FALSE; 
-//       goto test_xdrstdio_array_end;
-//     }
-// 
-//   if (o->log->level >= XDR_LOG_DEBUG)
-//     dumpmem (o->log->f, buf, buf_sz, 0);
-// 
-//   /* decode into allocated buffer */
-//   xdrstdio_create (&xdr_dec, buf, buf_sz, XDR_DECODE);
-//   if (!xdr_array (&xdr_dec, (char **)&p, &p_sz, TEST_DATA_SZ + 7, sizeof(int16_t), (xdrproc_t)xdr_int16_t))
-//     {
-//       log_msg (o->log, XDR_LOG_INFO,
-//                "%s: failed xdr_array (allocated) XDR_DECODE\n",
-//                testid);
-//       pass = FALSE;
-//       goto test_xdrstdio_array_end2;
-//     }
-//   
-//   /* check decoded array */
-//   if (p_sz != data_sz)
-//     {
-//       log_msg (o->log, XDR_LOG_INFO,
-//                "%s: failed xdr_array size compare: (exp=%d, val=%d)\n",
-//                testid, data_sz, p_sz);
-//       pass = FALSE;
-//       goto test_xdrstdio_array_end2;
-//     } 
-//   for (cnt = 0; cnt < data_sz; cnt++)
-//     {
-//       if (p[cnt] != data[cnt])
-//         {
-//           log_msg (o->log, XDR_LOG_INFO,
-//                    "%s: failed xdr_array compare: (cnt=%d, exp=%"
-//                    PRId16 ", val=%" PRId16 ")\n",
-//                    testid, cnt, data[cnt], p[cnt]);
-//            pass = FALSE;
-//            goto test_xdrstdio_array_end2;
-//         }
-//     }
-// 
-//   /* Free allocated buffer; not very efficient in this
-//    * case, because we deserialize each element from the 
-//    * buffer AGAIN, before freeing the entire array.
-//    * This makes more sense to do when you have structures
-//    * that contain pointers. But, here we just verify that
-//    * it works.
-//    */
-//   xdrstdio_create (&xdr_destroy, buf, buf_sz, XDR_FREE);
-//   if (!xdr_array (&xdr_destroy, (char **)&p, &p_sz, TEST_DATA_SZ + 7, sizeof(int16_t), (xdrproc_t)xdr_int16_t))
-//     {
-//       log_msg (o->log, XDR_LOG_INFO,
-//                "%s: failed xdr_array XDR_FREE\n",
-//                testid);
-//       pass = FALSE;
-//       goto test_xdrstdio_array_end3;
-//     }
-//   if (p != NULL)
-//     {
-//       log_msg (o->log, XDR_LOG_INFO,
-//                "%s: xdr_array XDR_FREE returned success, but did not NULL out ptr\n",
-//                testid);
-//       /* assume that data was freed, so null out manually */
-//       p = NULL;
-//       pass = FALSE;
-//       goto test_xdrstdio_array_end3;
-//     }
-// 
-// test_xdrstdio_array_end3:
-//   XDR_DESTROY (&xdr_destroy);
-// test_xdrstdio_array_end2:
-//   XDR_DESTROY (&xdr_dec);
-// test_xdrstdio_array_end:
-//   XDR_DESTROY (&xdr_enc);
-//   if (data) { free (data); data = NULL; }
-//   if (p)    { free (p); data = NULL; }
-//   if (pass == TRUE)
-//     log_msg (o->log, XDR_LOG_NORMAL, "%s: PASS\n", testid);
-//   else
-//     log_msg (o->log, XDR_LOG_NORMAL, "%s: FAIL\n", testid);
-//   return pass;
-// }
-// 
-// bool_t
-// test_xdrstdio_vector (opts * o)
-// {
-//   static const char *testid= "test_xdrstdio_vector";
-//   /* use INT16_DATA as the vector data source */
-//   /* these have static unfreeable storage, and fixed size */
-//   char buf[TEST_DATA_SZ * BYTES_PER_XDR_UNIT];
-//   int buf_sz = TEST_DATA_SZ * BYTES_PER_XDR_UNIT;
-//   int16_t data[TEST_DATA_SZ];
-//   int data_sz = TEST_DATA_SZ;
-// 
-//   XDR xdr_enc;
-//   XDR xdr_dec;
-//   int cnt;
-//   bool_t pass = TRUE;
-// 
-//   for (cnt = 0; cnt < data_sz; cnt++)
-//     data[cnt] = INT16_DATA[cnt];
-//   memset (buf, 0, buf_sz);
-// 
-//   log_msg (o->log, XDR_LOG_DETAIL, "%s: Entering test.\n", testid);
-// 
-//   xdrstdio_create (&xdr_enc, buf, buf_sz, XDR_ENCODE);
-//   if (!xdr_vector (&xdr_enc, (char *)data, data_sz, sizeof(int16_t), (xdrproc_t)xdr_int16_t))
-//     {
-//       log_msg (o->log, XDR_LOG_INFO,
-//                "%s: failed xdr_vector XDR_ENCODE\n",
-//                testid);
-//       pass = FALSE; 
-//       goto test_xdrstdio_vector_end;
-//     }
-// 
-//   if (o->log->level >= XDR_LOG_DEBUG)
-//     dumpmem (o->log->f, buf, buf_sz, 0);
-// 
-//   for (cnt = 0; cnt < data_sz; cnt++)
-//     data[cnt] = 0;
-// 
-//   /* decode buffer */
-//   xdrstdio_create (&xdr_dec, buf, buf_sz, XDR_DECODE);
-//   if (!xdr_vector (&xdr_dec, (char *)data, data_sz, sizeof(int16_t), (xdrproc_t)xdr_int16_t))
-//     {
-//       log_msg (o->log, XDR_LOG_INFO,
-//                "%s: failed xdr_vector XDR_DECODE\n",
-//                testid);
-//       pass = FALSE;
-//       goto test_xdrstdio_vector_end2;
-//     }
-//   
-//   for (cnt = 0; cnt < data_sz; cnt++)
-//     {
-//       if (data[cnt] != INT16_DATA[cnt])
-//         {
-//           log_msg (o->log, XDR_LOG_INFO,
-//                    "%s: failed xdr_vector compare: (cnt=%d, exp=%"
-//                    PRId16 ", val=%" PRId16 ")\n",
-//                    testid, cnt, INT16_DATA[cnt], data[cnt]);
-//            pass = FALSE;
-//            goto test_xdrstdio_vector_end2;
-//         }
-//     }
-// 
-// test_xdrstdio_vector_end2:
-//   XDR_DESTROY (&xdr_dec);
-// test_xdrstdio_vector_end:
-//   XDR_DESTROY (&xdr_enc);
-//   if (pass == TRUE)
-//     log_msg (o->log, XDR_LOG_NORMAL, "%s: PASS\n", testid);
-//   else
-//     log_msg (o->log, XDR_LOG_NORMAL, "%s: FAIL\n", testid);
-//   return pass;
-// }
-// 
-// bool_t
-// test_xdrstdio_reference (opts * o)
-// {
-//   static const char *testid= "test_xdrstdio_reference";
-//   pgn_t *data;
-//   char buf[100];
-//   int buf_sz = 100;
-//   pgn_t *p;
-// 
-//   XDR xdr_enc;
-//   XDR xdr_dec;
-//   int cnt;
-//   bool_t pass = TRUE;
-// 
-//   /* initiaize input data */ 
-//   init_pgn (&data, 0);
-//   memset (buf, 0, buf_sz);
-//   p = (pgn_t *) malloc (sizeof(pgn_t));
-//   memset (p, 0, sizeof(pgn_t));
-// 
-//   log_msg (o->log, XDR_LOG_DETAIL, "%s: Entering test.\n", testid);
-// 
-//   xdrstdio_create (&xdr_enc, buf, buf_sz, XDR_ENCODE);
-//   /* this struct contains a reference to another struct */
-//   if (!xdr_pgn_t (&xdr_enc, data))
-//     {
-//       log_msg (o->log, XDR_LOG_INFO,
-//                "%s: failed xdr_pgn_t XDR_ENCODE\n",
-//                testid);
-//       pass = FALSE; 
-//       goto test_xdrstdio_reference_end;
-//     }
-// 
-//   if (o->log->level >= XDR_LOG_DEBUG)
-//     dumpmem (o->log->f, buf, buf_sz, 0);
-// 
-//   /* decode into output variable */
-//   xdrstdio_create (&xdr_dec, buf, buf_sz, XDR_DECODE);
-//   if (!xdr_pgn_t (&xdr_dec, p))
-//     {
-//       log_msg (o->log, XDR_LOG_INFO,
-//                "%s: failed xdr_pgn_t XDR_DECODE\n",
-//                testid);
-//       pass = FALSE;
-//       goto test_xdrstdio_reference_end2;
-//     }
-//   
-//   /* check decoded values */
-//   if (compare_pgn(p, data) != 0)
-//     {
-//       log_msg (o->log, XDR_LOG_INFO,
-//                "%s: failed xdr_reference data compare.\n",
-//                testid);
-//       if (o->log->level >= XDR_LOG_INFO)
-//         {
-//           fprintf (o->log->f, "Expected: ");
-//           print_pgn (o->log->f, data);
-//           fprintf (o->log->f, "\nReceived: ");
-//           print_pgn (o->log->f, p);
-//           fprintf (o->log->f, "\n");
-//         }
-//       pass = FALSE;
-//       goto test_xdrstdio_reference_end2;
-//     }
-// 
-// test_xdrstdio_reference_end2:
-//   XDR_DESTROY (&xdr_dec);
-// test_xdrstdio_reference_end:
-//   XDR_DESTROY (&xdr_enc);
-//   if (data) { free_pgn (&data); }
-//   if (p)    { free_pgn (&p); }
-//   if (pass == TRUE)
-//     log_msg (o->log, XDR_LOG_NORMAL, "%s: PASS\n", testid);
-//   else
-//     log_msg (o->log, XDR_LOG_NORMAL, "%s: FAIL\n", testid);
-//   return pass;
-// }
-// 
-// bool_t
-// test_xdrstdio_list_impl (opts * o,
-//                        const char *testid,
-//                        const char *proc_name,
-//                        bool_t (*list_proc)(XDR *, pgn_list_t *))
-// {
-//   /*
-//    * Same test, called with xdr_pgn_list_t_RECURSIVE() and
-//    * xdr_pgn_list_t. The former is relatively inefficient, 
-//    * but explicitly exercises the xdr_pointer primitive.
-//    * The latter is the "correct" way to serialize a list.
-//    */
-//   pgn_list_t data = NULL;
-//   char buf[1024];
-//   int buf_sz = 1024;
-//   pgn_list_t p = NULL;
-// 
-//   XDR xdr_enc;
-//   XDR xdr_dec;
-//   XDR xdr_destroy;
-//   int cnt;
-//   u_int pos;
-//   bool_t pass = TRUE;
-//   pgn_node_t *currA;
-//   pgn_node_t *currB;
-// 
-//   log_msg (o->log, XDR_LOG_DETAIL, "%s: Entering test.\n", testid);
-// 
-//   /* initiaize input data */
-//   init_pgn_list (&data);
-//   memset (buf, 0, buf_sz);
-//   if (o->log->level >= XDR_LOG_DEBUG)
-//     {
-//       fprintf (o->log->f, "%s: Linked List Contents (input):\n", testid);
-//       print_pgn_list (o->log->f, &data);
-//     }
-// 
-//   xdrstdio_create (&xdr_enc, buf, buf_sz, XDR_ENCODE);
-//   /* this struct contains a pointer to another struct */
-//   if (!(*list_proc)(&xdr_enc, &data))
-//     {
-//       log_msg (o->log, XDR_LOG_INFO,
-//                "%s(%s): failed XDR_ENCODE\n",
-//                testid, proc_name);
-//       pass = FALSE; 
-//       goto test_xdrstdio_list_end;
-//     }
-//   pos = XDR_GETPOS (&xdr_enc);
-//   log_msg (o->log, XDR_LOG_INFO, "%s(%s): used %d bytes\n", 
-//            testid, proc_name, pos);
-// 
-//   if (o->log->level >= XDR_LOG_DEBUG)
-//     dumpmem (o->log->f, buf, buf_sz, 0);
-// 
-//   /* decode into output variable */
-//   xdrstdio_create (&xdr_dec, buf, buf_sz, XDR_DECODE);
-//   if (!(*list_proc)(&xdr_dec, &p))
-//     {
-//       log_msg (o->log, XDR_LOG_INFO,
-//                "%s(%s): failed XDR_DECODE\n",
-//                testid, proc_name);
-//       pass = FALSE;
-//       goto test_xdrstdio_list_end2;
-//     }
-//   pos = XDR_GETPOS (&xdr_dec);
-//   log_msg (o->log, XDR_LOG_INFO, "%s(%s): used %d bytes\n",
-//            testid, proc_name, pos);
-// 
-//   if (o->log->level >= XDR_LOG_DEBUG)
-//     {
-//       fprintf (o->log->f, "%s(%s): Linked List Contents (output):\n",
-//                testid, proc_name);
-//       print_pgn_list (o->log->f, &p);
-//     }
-// 
-//   /* compare decoded list */
-//   currA = data;
-//   currB = p;
-//   cnt = 0;
-//   while (currA && currB)
-//     {
-//       if (compare_pgn(&currA->pgn, &currB->pgn) != 0)
-//         {
-//           log_msg (o->log, XDR_LOG_INFO,
-//                    "%s(%s): failed data compare (element %d).\n",
-//                    testid, proc_name, cnt);
-//           if (o->log->level >= XDR_LOG_INFO)
-//             {
-//               fprintf (o->log->f, "Expected: ");
-//               print_pgn (o->log->f, &currA->pgn);
-//               fprintf (o->log->f, "\nReceived: ");
-//               print_pgn (o->log->f, &currB->pgn);
-//               fprintf (o->log->f, "\n");
-//             }
-//           pass = FALSE;
-//           goto test_xdrstdio_list_end2;
-//         }
-//       currA = currA->pgn_next;
-//       currB = currB->pgn_next;
-//       cnt++;
-//     }
-//   if ((currA && !currB) || (currB && !currA))
-//     {
-//       log_msg (o->log, XDR_LOG_INFO,
-//                "%s(%s): failed data compare: "
-//                "# output elements != # input elements).\n",
-//                testid, proc_name);
-//       pass = FALSE;
-//       goto test_xdrstdio_list_end2;
-//     }
-// 
-//   /* Free allocated list. */
-//   xdrstdio_create (&xdr_destroy, buf, buf_sz, XDR_FREE);
-//   if (!(*list_proc)(&xdr_destroy, &p))
-//     {
-//       log_msg (o->log, XDR_LOG_INFO,
-//                "%s(%s): failed XDR_FREE\n",
-//                testid, proc_name);
-//       pass = FALSE;
-//       goto test_xdrstdio_list_end3;
-//     }
-//   pos = XDR_GETPOS (&xdr_destroy);
-//   log_msg (o->log, XDR_LOG_INFO, "%s(%s): used %d bytes\n",
-//            testid, proc_name,pos);
-// 
-//   if (p != NULL)
-//     {
-//       log_msg (o->log, XDR_LOG_INFO,
-//                "%s(%s): XDR_FREE returned "
-//                "success, but did not NULL out ptr\n",
-//                testid, proc_name);
-//       /* assume that data was freed, so null out manually */
-//       p = NULL;
-//       pass = FALSE;
-//       goto test_xdrstdio_list_end3;
-//     }
-// 
-// test_xdrstdio_list_end3:
-//   XDR_DESTROY (&xdr_destroy);
-// test_xdrstdio_list_end2:
-//   XDR_DESTROY (&xdr_dec);
-// test_xdrstdio_list_end:
-//   XDR_DESTROY (&xdr_enc);
-//   if (data) { free_pgn_list (&data); }
-//   if (p)    { free_pgn_list (&p); }
-//   if (pass == TRUE)
-//     log_msg (o->log, XDR_LOG_NORMAL, "%s: PASS\n", testid);
-//   else
-//     log_msg (o->log, XDR_LOG_NORMAL, "%s: FAIL\n", testid);
-//   return pass;
-// }
-// 
-// bool_t
-// test_xdrstdio_pointer (opts * o)
-// {
-//   return test_xdrstdio_list_impl (o, "test_xdrstdio_pointer",
-//                                 "xdr_pgn_list_t_RECURSIVE",
-//                                 xdr_pgn_list_t_RECURSIVE);
-// }
-// 
-// bool_t
-// test_xdrstdio_list (opts * o)
-// {
-//   return test_xdrstdio_list_impl (o, "test_xdrstdio_list",
-//                                 "xdr_pgn_list_t",
-//                                 xdr_pgn_list_t);
-// }
-// 
-// bool_t
-// test_xdrstdio_primitive_struct (opts * o)
-// {
-//   static const char *testid= "test_xdrstdio_primitive_struct";
-//   char buf[144];
-//   int buf_sz = 144;
-//   test_struct_of_primitives_t data;
-//   test_struct_of_primitives_t p;
-//   u_int pos;
-// 
-//   XDR xdr_enc;
-//   XDR xdr_dec;
-//   bool_t pass = TRUE;
-// 
-//   init_primitive_struct (&data);
-//   memset (buf, 0, buf_sz);
-// 
-//   log_msg (o->log, XDR_LOG_DETAIL, "%s: Entering test.\n", testid);
-// 
-//   if (o->log->level >= XDR_LOG_DEBUG)
-//     {
-//       fprintf (o->log->f, "%s: structure contents (input):\n", testid);
-//       print_primitive_struct (o->log->f, &data);
-//     }
-// 
-//   xdrstdio_create (&xdr_enc, buf, buf_sz, XDR_ENCODE);
-//   if (!xdr_primitive_struct_t (&xdr_enc, &data))
-//     {
-//       log_msg (o->log, XDR_LOG_INFO,
-//                "%s(xdr_primitive_struct_t): failed XDR_ENCODE\n",
-//                testid);
-//       pass = FALSE; 
-//       goto test_xdrstdio_array_end;
-//     }
-//   pos = XDR_GETPOS (&xdr_enc);
-//   log_msg (o->log, XDR_LOG_INFO,
-//            "%s(xdr_primitive_struct_t): XDR_ENCODE used %d bytes\n",
-//            testid, pos);
-// 
-//   if (o->log->level >= XDR_LOG_DEBUG)
-//     dumpmem (o->log->f, buf, buf_sz, 0);
-// 
-//   /* decode into allocated buffer */
-//   xdrstdio_create (&xdr_dec, buf, buf_sz, XDR_DECODE);
-//   if (!xdr_primitive_struct_t (&xdr_dec, &p))
-//     {
-//       log_msg (o->log, XDR_LOG_INFO,
-//                "%s(xdr_primitive_struct_t): failed XDR_DECODE\n",
-//                testid);
-//       pass = FALSE;
-//       goto test_xdrstdio_array_end2;
-//     }
-//   pos = XDR_GETPOS (&xdr_dec);
-//   log_msg (o->log, XDR_LOG_INFO,
-//            "%s(xdr_primitive_struct_t): XDR_DECODE used %d bytes\n",
-//            testid, pos);
-// 
-//   if (o->log->level >= XDR_LOG_DEBUG)
-//     {
-//       fprintf (o->log->f, "%s: structure contents (output):\n", testid);
-//       print_primitive_struct (o->log->f, &p);
-//     }
-//   
-//   if (compare_primitive_structs (&data, &p) != 0)
-//     {
-//       log_msg (o->log, XDR_LOG_INFO,
-//                "%s(xdr_primitive_struct_t): failed compare\n",
-//                testid);
-//        if (o->log->level >= XDR_LOG_INFO)
-//          {
-//            fprintf (o->log->f, "Expected:\n");
-//            print_primitive_struct (o->log->f, &p);
-//            fprintf (o->log->f, "Received:\n");
-//            print_primitive_struct (o->log->f, &p);
-//          }
-//        pass = FALSE;
-//        goto test_xdrstdio_array_end2;
-//     }
-// 
-// test_xdrstdio_array_end2:
-//   XDR_DESTROY (&xdr_dec);
-// test_xdrstdio_array_end:
-//   XDR_DESTROY (&xdr_enc);
-//   if (pass == TRUE)
-//     log_msg (o->log, XDR_LOG_NORMAL, "%s: PASS\n", testid);
-//   else
-//     log_msg (o->log, XDR_LOG_NORMAL, "%s: FAIL\n", testid);
-//   return pass;
-// }
-// 
+bool_t
+test_xdrstdio_u_int (opts * o)
+{
+  static const char *testid= "test_xdrstdio_u_int";
+  int i;
+  bool_t rv;
+  unsigned int data[TEST_DATA_SZ];
+  xdrstdio_creation_data xdr_data;
+  xdr_data.o = o;
+  xdr_data.finish_guard = 0;
+  xdr_data.name = "xdrstdio_u_int";
+  xdr_data.fullname = NULL;
+  xdr_data.f = NULL;
+
+  for (i=0;i<TEST_DATA_SZ;i++) data[i] = UINT_DATA[i];
+  rv = test_basic_type_core_xdr_u_int (o->log, testid, data,
+      TEST_DATA_SZ, &xdrstdio_stream_ops, FALSE, (void *)&xdr_data);
+  return rv;
+}
+
+bool_t
+test_xdrstdio_long (opts * o)
+{
+  static const char *testid= "test_xdrstdio_long";
+  int i;
+  bool_t rv;
+  long data[TEST_DATA_SZ];
+  xdrstdio_creation_data xdr_data;
+  xdr_data.o = o;
+  xdr_data.finish_guard = 0;
+  xdr_data.name = "xdrstdio_long";
+  xdr_data.fullname = NULL;
+  xdr_data.f = NULL;
+
+  for (i=0;i<TEST_DATA_SZ;i++) data[i] = LONG_DATA[i];
+  rv = test_basic_type_core_xdr_long (o->log, testid, data,
+      TEST_DATA_SZ, &xdrstdio_stream_ops, FALSE, (void *)&xdr_data);
+  return rv;
+}
+
+bool_t
+test_xdrstdio_u_long (opts * o)
+{
+  static const char *testid= "test_xdrstdio_u_long";
+  int i;
+  bool_t rv;
+  unsigned long data[TEST_DATA_SZ];
+  xdrstdio_creation_data xdr_data;
+  xdr_data.o = o;
+  xdr_data.finish_guard = 0;
+  xdr_data.name = "xdrstdio_u_long";
+  xdr_data.fullname = NULL;
+  xdr_data.f = NULL;
+
+  for (i=0;i<TEST_DATA_SZ;i++) data[i] = ULONG_DATA[i];
+  rv = test_basic_type_core_xdr_u_long (o->log, testid, data,
+      TEST_DATA_SZ, &xdrstdio_stream_ops, FALSE, (void *)&xdr_data);
+  return rv;
+}
+
+bool_t
+test_xdrstdio_short (opts * o)
+{
+  static const char *testid= "test_xdrstdio_short";
+  int i;
+  bool_t rv;
+  short data[TEST_DATA_SZ];
+  xdrstdio_creation_data xdr_data;
+  xdr_data.o = o;
+  xdr_data.finish_guard = 0;
+  xdr_data.name = "xdrstdio_short";
+  xdr_data.fullname = NULL;
+  xdr_data.f = NULL;
+
+  for (i=0;i<TEST_DATA_SZ;i++) data[i] = SHORT_DATA[i];
+  rv = test_basic_type_core_xdr_short (o->log, testid, data,
+      TEST_DATA_SZ, &xdrstdio_stream_ops, FALSE, (void *)&xdr_data);
+  return rv;
+}
+
+bool_t
+test_xdrstdio_u_short (opts * o)
+{
+  static const char *testid= "test_xdrstdio_u_short";
+  int i;
+  bool_t rv;
+  unsigned short data[TEST_DATA_SZ];
+  xdrstdio_creation_data xdr_data;
+  xdr_data.o = o;
+  xdr_data.finish_guard = 0;
+  xdr_data.name = "xdrstdio_u_short";
+  xdr_data.fullname = NULL;
+  xdr_data.f = NULL;
+
+  for (i=0;i<TEST_DATA_SZ;i++) data[i] = USHORT_DATA[i];
+  rv = test_basic_type_core_xdr_u_short (o->log, testid, data,
+      TEST_DATA_SZ, &xdrstdio_stream_ops, FALSE, (void *)&xdr_data);
+  return rv;
+}
+
+bool_t
+test_xdrstdio_char (opts * o)
+{
+  static const char *testid= "test_xdrstdio_char";
+  int i;
+  bool_t rv;
+  char data[TEST_DATA_SZ];
+  xdrstdio_creation_data xdr_data;
+  xdr_data.o = o;
+  xdr_data.finish_guard = 0;
+  xdr_data.name = "xdrstdio_char";
+  xdr_data.fullname = NULL;
+  xdr_data.f = NULL;
+
+#if CHAR_MIN < 0
+  /* char is signed */
+  for (i=0;i<TEST_DATA_SZ;i++) data[i] = (char)SCHAR_DATA[i];
+#else
+    /* char is unsigned */
+  for (i=0;i<TEST_DATA_SZ;i++) data[i] = (char)UCHAR_DATA[i];
+#endif
+  rv = test_basic_type_core_xdr_char (o->log, testid, data,
+      TEST_DATA_SZ, &xdrstdio_stream_ops, FALSE, (void *)&xdr_data);
+  return rv;
+}
+
+bool_t
+test_xdrstdio_u_char (opts * o)
+{
+  static const char *testid= "test_xdrstdio_u_char";
+  int i;
+  bool_t rv;
+  unsigned char data[TEST_DATA_SZ];
+  xdrstdio_creation_data xdr_data;
+  xdr_data.o = o;
+  xdr_data.finish_guard = 0;
+  xdr_data.name = "xdrstdio_u_char";
+  xdr_data.fullname = NULL;
+  xdr_data.f = NULL;
+
+  for (i=0;i<TEST_DATA_SZ;i++) data[i] = UCHAR_DATA[i];
+  rv = test_basic_type_core_xdr_u_char (o->log, testid, data,
+      TEST_DATA_SZ, &xdrstdio_stream_ops, FALSE, (void *)&xdr_data);
+  return rv;
+}
+
+bool_t
+test_xdrstdio_int8_t (opts * o)
+{
+  static const char *testid= "test_xdrstdio_int8_t";
+  int i;
+  bool_t rv;
+  int8_t data[TEST_DATA_SZ];
+  xdrstdio_creation_data xdr_data;
+  xdr_data.o = o;
+  xdr_data.finish_guard = 0;
+  xdr_data.name = "xdrstdio_int8_t";
+  xdr_data.fullname = NULL;
+  xdr_data.f = NULL;
+
+  for (i=0;i<TEST_DATA_SZ;i++) data[i] = INT8_DATA[i];
+  rv = test_basic_type_core_xdr_int8_t (o->log, testid, data,
+      TEST_DATA_SZ, &xdrstdio_stream_ops, FALSE, (void *)&xdr_data);
+  return rv;
+}
+
+bool_t
+test_xdrstdio_u_int8_t (opts * o)
+{
+  static const char *testid= "test_xdrstdio_u_int8_t";
+  int i;
+  bool_t rv;
+  u_int8_t data[TEST_DATA_SZ];
+  xdrstdio_creation_data xdr_data;
+  xdr_data.o = o;
+  xdr_data.finish_guard = 0;
+  xdr_data.name = "xdrstdio_u_int8_t";
+  xdr_data.fullname = NULL;
+  xdr_data.f = NULL;
+
+  for (i=0;i<TEST_DATA_SZ;i++) data[i] = (u_int8_t)UINT8_DATA[i];
+  rv = test_basic_type_core_xdr_u_int8_t (o->log, testid, data,
+      TEST_DATA_SZ, &xdrstdio_stream_ops, FALSE, (void *)&xdr_data);
+  return rv;
+}
+
+bool_t
+test_xdrstdio_uint8_t (opts * o)
+{
+  static const char *testid= "test_xdrstdio_uint8_t";
+  int i;
+  bool_t rv;
+  uint8_t data[TEST_DATA_SZ];
+  xdrstdio_creation_data xdr_data;
+  xdr_data.o = o;
+  xdr_data.finish_guard = 0;
+  xdr_data.name = "xdrstdio_uint8_t";
+  xdr_data.fullname = NULL;
+  xdr_data.f = NULL;
+
+  for (i=0;i<TEST_DATA_SZ;i++) data[i] = UINT8_DATA[i];
+  rv = test_basic_type_core_xdr_uint8_t (o->log, testid, data,
+      TEST_DATA_SZ, &xdrstdio_stream_ops, FALSE, (void *)&xdr_data);
+  return rv;
+}
+
+bool_t
+test_xdrstdio_int16_t (opts * o)
+{
+  static const char *testid= "test_xdrstdio_int16_t";
+  int i;
+  bool_t rv;
+  int16_t data[TEST_DATA_SZ];
+  xdrstdio_creation_data xdr_data;
+  xdr_data.o = o;
+  xdr_data.finish_guard = 0;
+  xdr_data.name = "xdrstdio_int16_t";
+  xdr_data.fullname = NULL;
+  xdr_data.f = NULL;
+
+  for (i=0;i<TEST_DATA_SZ;i++) data[i] = INT16_DATA[i];
+  rv = test_basic_type_core_xdr_int16_t (o->log, testid, data,
+      TEST_DATA_SZ, &xdrstdio_stream_ops, FALSE, (void *)&xdr_data);
+  return rv;
+}
+
+bool_t
+test_xdrstdio_u_int16_t (opts * o)
+{
+  static const char *testid= "test_xdrstdio_u_int16_t";
+  int i;
+  bool_t rv;
+  u_int16_t data[TEST_DATA_SZ];
+  xdrstdio_creation_data xdr_data;
+  xdr_data.o = o;
+  xdr_data.finish_guard = 0;
+  xdr_data.name = "xdrstdio_u_int16_t";
+  xdr_data.fullname = NULL;
+  xdr_data.f = NULL;
+
+  for (i=0;i<TEST_DATA_SZ;i++) data[i] = (u_int16_t)UINT16_DATA[i];
+  rv = test_basic_type_core_xdr_u_int16_t (o->log, testid, data,
+      TEST_DATA_SZ, &xdrstdio_stream_ops, FALSE, (void *)&xdr_data);
+  return rv;
+}
+
+bool_t
+test_xdrstdio_uint16_t (opts * o)
+{
+  static const char *testid= "test_xdrstdio_uint16_t";
+  int i;
+  bool_t rv;
+  uint16_t data[TEST_DATA_SZ];
+  xdrstdio_creation_data xdr_data;
+  xdr_data.o = o;
+  xdr_data.finish_guard = 0;
+  xdr_data.name = "xdrstdio_uint16_t";
+  xdr_data.fullname = NULL;
+  xdr_data.f = NULL;
+
+  for (i=0;i<TEST_DATA_SZ;i++) data[i] = UINT16_DATA[i];
+  rv = test_basic_type_core_xdr_uint16_t (o->log, testid, data,
+      TEST_DATA_SZ, &xdrstdio_stream_ops, FALSE, (void *)&xdr_data);
+  return rv;
+}
+
+bool_t
+test_xdrstdio_int32_t (opts * o)
+{
+  static const char *testid= "test_xdrstdio_int32_t";
+  int i;
+  bool_t rv;
+  int32_t data[TEST_DATA_SZ];
+  xdrstdio_creation_data xdr_data;
+  xdr_data.o = o;
+  xdr_data.finish_guard = 0;
+  xdr_data.name = "xdrstdio_int32_t";
+  xdr_data.fullname = NULL;
+  xdr_data.f = NULL;
+
+  for (i=0;i<TEST_DATA_SZ;i++) data[i] = INT32_DATA[i];
+  rv = test_basic_type_core_xdr_int32_t (o->log, testid, data,
+      TEST_DATA_SZ, &xdrstdio_stream_ops, FALSE, (void *)&xdr_data);
+  return rv;
+}
+
+bool_t
+test_xdrstdio_u_int32_t (opts * o)
+{
+  static const char *testid= "test_xdrstdio_u_int32_t";
+  int i;
+  bool_t rv;
+  u_int32_t data[TEST_DATA_SZ];
+  xdrstdio_creation_data xdr_data;
+  xdr_data.o = o;
+  xdr_data.finish_guard = 0;
+  xdr_data.name = "xdrstdio_u_int32_t";
+  xdr_data.fullname = NULL;
+  xdr_data.f = NULL;
+
+  for (i=0;i<TEST_DATA_SZ;i++) data[i] = (u_int32_t)UINT32_DATA[i];
+  rv = test_basic_type_core_xdr_u_int32_t (o->log, testid, data,
+      TEST_DATA_SZ, &xdrstdio_stream_ops, FALSE, (void *)&xdr_data);
+  return rv;
+}
+
+bool_t
+test_xdrstdio_uint32_t (opts * o)
+{
+  static const char *testid= "test_xdrstdio_uint32_t";
+  int i;
+  bool_t rv;
+  uint32_t data[TEST_DATA_SZ];
+  xdrstdio_creation_data xdr_data;
+  xdr_data.o = o;
+  xdr_data.finish_guard = 0;
+  xdr_data.name = "xdrstdio_uint32_t";
+  xdr_data.fullname = NULL;
+  xdr_data.f = NULL;
+
+  for (i=0;i<TEST_DATA_SZ;i++) data[i] = UINT32_DATA[i];
+  rv = test_basic_type_core_xdr_uint32_t (o->log, testid, data,
+      TEST_DATA_SZ, &xdrstdio_stream_ops, FALSE, (void *)&xdr_data);
+  return rv;
+}
+
+bool_t
+test_xdrstdio_int64_t (opts * o)
+{
+  static const char *testid= "test_xdrstdio_int64_t";
+  int i;
+  bool_t rv;
+  int64_t data[TEST_DATA_SZ];
+  xdrstdio_creation_data xdr_data;
+  xdr_data.o = o;
+  xdr_data.finish_guard = 0;
+  xdr_data.name = "xdrstdio_int64_t";
+  xdr_data.fullname = NULL;
+  xdr_data.f = NULL;
+
+  for (i=0;i<TEST_DATA_SZ;i++) data[i] = INT64_DATA[i];
+  rv = test_basic_type_core_xdr_int64_t (o->log, testid, data,
+      TEST_DATA_SZ, &xdrstdio_stream_ops, FALSE, (void *)&xdr_data);
+  return rv;
+}
+
+bool_t
+test_xdrstdio_u_int64_t (opts * o)
+{
+  static const char *testid= "test_xdrstdio_u_int64_t";
+  int i;
+  bool_t rv;
+  u_int64_t data[TEST_DATA_SZ];
+  xdrstdio_creation_data xdr_data;
+  xdr_data.o = o;
+  xdr_data.finish_guard = 0;
+  xdr_data.name = "xdrstdio_u_int64_t";
+  xdr_data.fullname = NULL;
+  xdr_data.f = NULL;
+
+  for (i=0;i<TEST_DATA_SZ;i++) data[i] = (u_int64_t)UINT64_DATA[i];
+  rv = test_basic_type_core_xdr_u_int64_t (o->log, testid, data,
+      TEST_DATA_SZ, &xdrstdio_stream_ops, FALSE, (void *)&xdr_data);
+  return rv;
+}
+
+bool_t
+test_xdrstdio_uint64_t (opts * o)
+{
+  static const char *testid= "test_xdrstdio_uint64_t";
+  int i;
+  bool_t rv;
+  uint64_t data[TEST_DATA_SZ];
+  xdrstdio_creation_data xdr_data;
+  xdr_data.o = o;
+  xdr_data.finish_guard = 0;
+  xdr_data.name = "xdrstdio_uint64_t";
+  xdr_data.fullname = NULL;
+  xdr_data.f = NULL;
+
+  for (i=0;i<TEST_DATA_SZ;i++) data[i] = UINT64_DATA[i];
+  rv = test_basic_type_core_xdr_uint64_t (o->log, testid, data,
+      TEST_DATA_SZ, &xdrstdio_stream_ops, FALSE, (void *)&xdr_data);
+  return rv;
+}
+
+bool_t
+test_xdrstdio_hyper (opts * o)
+{
+  static const char *testid= "test_xdrstdio_hyper";
+  int i;
+  bool_t rv;
+  quad_t data[TEST_DATA_SZ];
+  xdrstdio_creation_data xdr_data;
+  xdr_data.o = o;
+  xdr_data.finish_guard = 0;
+  xdr_data.name = "xdrstdio_hyper";
+  xdr_data.fullname = NULL;
+  xdr_data.f = NULL;
+
+  for (i=0;i<TEST_DATA_SZ;i++) data[i] = HYPER_DATA[i];
+  rv = test_basic_type_core_xdr_hyper (o->log, testid, data,
+      TEST_DATA_SZ, &xdrstdio_stream_ops, FALSE, (void *)&xdr_data);
+  return rv;
+}
+
+bool_t
+test_xdrstdio_u_hyper (opts * o)
+{
+  static const char *testid= "test_xdrstdio_u_hyper";
+  int i;
+  bool_t rv;
+  u_quad_t data[TEST_DATA_SZ];
+  xdrstdio_creation_data xdr_data;
+  xdr_data.o = o;
+  xdr_data.finish_guard = 0;
+  xdr_data.name = "xdrstdio_u_hyper";
+  xdr_data.fullname = NULL;
+  xdr_data.f = NULL;
+
+  for (i=0;i<TEST_DATA_SZ;i++) data[i] = UHYPER_DATA[i];
+  rv = test_basic_type_core_xdr_u_hyper (o->log, testid, data,
+      TEST_DATA_SZ, &xdrstdio_stream_ops, FALSE, (void *)&xdr_data);
+  return rv;
+}
+
+bool_t
+test_xdrstdio_longlong_t (opts * o)
+{
+  static const char *testid= "test_xdrstdio_longlong_t";
+  int i;
+  bool_t rv;
+  quad_t data[TEST_DATA_SZ];
+  xdrstdio_creation_data xdr_data;
+  xdr_data.o = o;
+  xdr_data.finish_guard = 0;
+  xdr_data.name = "xdrstdio_longlong_t";
+  xdr_data.fullname = NULL;
+  xdr_data.f = NULL;
+
+  for (i=0;i<TEST_DATA_SZ;i++) data[i] = LONGLONG_DATA[i];
+  rv = test_basic_type_core_xdr_longlong_t (o->log, testid, data,
+      TEST_DATA_SZ, &xdrstdio_stream_ops, FALSE, (void *)&xdr_data);
+  return rv;
+}
+
+bool_t
+test_xdrstdio_u_longlong_t (opts * o)
+{
+  static const char *testid= "test_xdrstdio_u_longlong_t";
+  int i;
+  bool_t rv;
+  u_quad_t data[TEST_DATA_SZ];
+  xdrstdio_creation_data xdr_data;
+  xdr_data.o = o;
+  xdr_data.finish_guard = 0;
+  xdr_data.name = "xdrstdio_u_longlong_t";
+  xdr_data.fullname = NULL;
+  xdr_data.f = NULL;
+
+  for (i=0;i<TEST_DATA_SZ;i++) data[i] = ULONGLONG_DATA[i];
+  rv = test_basic_type_core_xdr_u_longlong_t (o->log, testid, data,
+      TEST_DATA_SZ, &xdrstdio_stream_ops, FALSE, (void *)&xdr_data);
+  return rv;
+}
+
+bool_t
+test_xdrstdio_float (opts * o)
+{
+  static const char *testid= "test_xdrstdio_float";
+  bool_t rv;
+  float data[TEST_DATA_SZ];
+  xdrstdio_creation_data xdr_data;
+  xdr_data.o = o;
+  xdr_data.finish_guard = 0;
+  xdr_data.name = "xdrstdio_float";
+  xdr_data.fullname = NULL;
+  xdr_data.f = NULL;
+
+  init_float_data (data);
+  rv = test_basic_type_core_xdr_float (o->log, testid, data,
+      TEST_DATA_SZ, &xdrstdio_stream_ops, FALSE, (void *)&xdr_data);
+  return rv;
+}
+
+bool_t
+test_xdrstdio_double (opts * o)
+{
+  static const char *testid= "test_xdrstdio_double";
+  bool_t rv;
+  double data[TEST_DATA_SZ];
+  xdrstdio_creation_data xdr_data;
+  xdr_data.o = o;
+  xdr_data.finish_guard = 0;
+  xdr_data.name = "xdrstdio_double";
+  xdr_data.fullname = NULL;
+  xdr_data.f = NULL;
+
+  init_double_data (data);
+  rv = test_basic_type_core_xdr_double (o->log, testid, data,
+      TEST_DATA_SZ, &xdrstdio_stream_ops, FALSE, (void *)&xdr_data);
+  return rv;
+}
+
+bool_t
+test_xdrstdio_bool (opts * o)
+{
+  static const char *testid= "test_xdrstdio_bool";
+  int i;
+  bool_t rv;
+  bool_t data[TEST_DATA_SZ];
+  xdrstdio_creation_data xdr_data;
+  xdr_data.o = o;
+  xdr_data.finish_guard = 0;
+  xdr_data.name = "xdrstdio_bool";
+  xdr_data.fullname = NULL;
+  xdr_data.f = NULL;
+
+  for (i=0;i<TEST_DATA_SZ;i++) data[i] = BOOL_DATA[i];
+  rv = test_basic_type_core_xdr_bool (o->log, testid, data,
+      TEST_DATA_SZ, &xdrstdio_stream_ops, FALSE, (void *)&xdr_data);
+  return rv;
+}
+
+bool_t
+test_xdrstdio_enum (opts * o)
+{
+  static const char *testid= "test_xdrstdio_enum";
+  int i;
+  bool_t rv;
+  test_enum_t data[TEST_DATA_SZ];
+  xdrstdio_creation_data xdr_data;
+  xdr_data.o = o;
+  xdr_data.finish_guard = 0;
+  xdr_data.name = "xdrstdio_enum";
+  xdr_data.fullname = NULL;
+  xdr_data.f = NULL;
+
+  for (i=0;i<TEST_DATA_SZ;i++) data[i] = ENUM_DATA[i];
+  rv = test_basic_type_core_xdr_enum (o->log, testid, (enum_t*) data,
+      TEST_DATA_SZ, &xdrstdio_stream_ops, FALSE, (void *)&xdr_data);
+  return rv;
+}
+
+bool_t
+test_xdrstdio_union (opts * o)
+{
+  static const char *testid= "test_xdrstdio_union";
+  bool_t rv;
+  xdrstdio_creation_data xdr_data;
+  xdr_data.o = o;
+  xdr_data.finish_guard = 0;
+  xdr_data.name = "xdrstdio_union";
+  xdr_data.fullname = NULL;
+  xdr_data.f = NULL;
+
+  rv = test_core_xdr_union (o->log, testid,
+    &xdrstdio_stream_ops, FALSE, (void *)&xdr_data);
+  return rv;
+}
+
+bool_t
+test_xdrstdio_opaque (opts * o)
+{
+  static const char *testid= "test_xdrstdio_opaque";
+  bool_t rv;
+  xdrstdio_creation_data xdr_data;
+  xdr_data.o = o;
+  xdr_data.finish_guard = 0;
+  xdr_data.name = "xdrstdio_opaque";
+  xdr_data.fullname = NULL;
+  xdr_data.f = NULL;
+
+  rv = test_core_xdr_opaque (o->log, testid,
+    &xdrstdio_stream_ops, (void *)&xdr_data);
+  return rv;
+}
+
+bool_t
+test_xdrstdio_bytes (opts * o)
+{
+  static const char *testid= "test_xdrstdio_bytes";
+  bool_t rv;
+  xdrstdio_creation_data xdr_data;
+  xdr_data.o = o;
+  xdr_data.finish_guard = 0;
+  xdr_data.name = "xdrstdio_bytes";
+  xdr_data.fullname = NULL;
+  xdr_data.f = NULL;
+
+  rv = test_core_xdr_bytes (o->log, testid,
+    &xdrstdio_stream_ops, (void *)&xdr_data);
+  return rv;
+}
+
+bool_t
+test_xdrstdio_string (opts * o)
+{
+  static const char *testid= "test_xdrstdio_string";
+  bool_t rv;
+  xdrstdio_creation_data xdr_data;
+  xdr_data.o = o;
+  xdr_data.finish_guard = 0;
+  xdr_data.name = "xdrstdio_string";
+  xdr_data.fullname = NULL;
+  xdr_data.f = NULL;
+
+  rv = test_core_xdr_string (o->log, testid,
+    &xdrstdio_stream_ops, (void *)&xdr_data);
+  return rv;
+}
+
+bool_t
+test_xdrstdio_wrapstring (opts * o)
+{
+  static const char *testid= "test_xdrstdio_wrapstring";
+  bool_t rv;
+  xdrstdio_creation_data xdr_data;
+  xdr_data.o = o;
+  xdr_data.finish_guard = 0;
+  xdr_data.name = "xdrstdio_wrapstring";
+  xdr_data.fullname = NULL;
+  xdr_data.f = NULL;
+
+  rv = test_core_xdr_wrapstring (o->log, testid,
+    &xdrstdio_stream_ops, (void *)&xdr_data);
+  return rv;
+}
+
+bool_t
+test_xdrstdio_array (opts * o)
+{
+  static const char *testid= "test_xdrstdio_array";
+  bool_t rv;
+  xdrstdio_creation_data xdr_data;
+  xdr_data.o = o;
+  xdr_data.finish_guard = 0;
+  xdr_data.name = "xdrstdio_array";
+  xdr_data.fullname = NULL;
+  xdr_data.f = NULL;
+
+  rv = test_core_xdr_array (o->log, testid,
+    &xdrstdio_stream_ops, (void *)&xdr_data);
+  return rv;
+}
+
+bool_t
+test_xdrstdio_vector (opts * o)
+{
+  static const char *testid= "test_xdrstdio_vector";
+  bool_t rv;
+  xdrstdio_creation_data xdr_data;
+  xdr_data.o = o;
+  xdr_data.finish_guard = 0;
+  xdr_data.name = "xdrstdio_vector";
+  xdr_data.fullname = NULL;
+  xdr_data.f = NULL;
+
+  rv = test_core_xdr_vector (o->log, testid,
+    &xdrstdio_stream_ops, (void *)&xdr_data);
+  return rv;
+}
+
+bool_t
+test_xdrstdio_reference (opts * o)
+{
+  static const char *testid= "test_xdrstdio_reference";
+  bool_t rv;
+  xdrstdio_creation_data xdr_data;
+  xdr_data.o = o;
+  xdr_data.finish_guard = 0;
+  xdr_data.name = "xdrstdio_reference";
+  xdr_data.fullname = NULL;
+  xdr_data.f = NULL;
+
+  rv = test_core_xdr_reference (o->log, testid,
+    &xdrstdio_stream_ops, (void *)&xdr_data);
+  return rv;
+}
+
+bool_t
+test_xdrstdio_pointer (opts * o)
+{
+  static const char *testid= "test_xdrstdio_pointer";
+  bool_t rv;
+  xdrstdio_creation_data xdr_data;
+  xdr_data.o = o;
+  xdr_data.finish_guard = 0;
+  xdr_data.name = "xdrstdio_pointer";
+  xdr_data.fullname = NULL;
+  xdr_data.f = NULL;
+
+  rv = test_core_xdr_list (o->log, testid,
+    &xdrstdio_stream_ops, "xdr_pgn_list_t_RECURSIVE",
+    xdr_pgn_list_t_RECURSIVE, (void *)&xdr_data);
+  return rv;
+}
+
+bool_t
+test_xdrstdio_list (opts * o)
+{
+  static const char *testid= "test_xdrstdio_list";
+  bool_t rv;
+  xdrstdio_creation_data xdr_data;
+  xdr_data.o = o;
+  xdr_data.finish_guard = 0;
+  xdr_data.name = "xdrstdio_list";
+  xdr_data.fullname = NULL;
+  xdr_data.f = NULL;
+
+  rv = test_core_xdr_list (o->log, testid,
+    &xdrstdio_stream_ops, "xdr_pgn_list_t",
+    xdr_pgn_list_t, (void *)&xdr_data);
+  return rv;
+}
+
+bool_t
+test_xdrstdio_primitive_struct (opts * o)
+{
+  static const char *testid= "test_xdrstdio_primitive_struct";
+  bool_t rv;
+  xdrstdio_creation_data xdr_data;
+  xdr_data.o = o;
+  xdr_data.finish_guard = 0;
+  xdr_data.name = "xdrstdio_primitive_struct";
+  xdr_data.fullname = NULL;
+  xdr_data.f = NULL;
+
+  rv = test_core_xdr_primitive_struct (o->log, testid,
+    &xdrstdio_stream_ops, (void *)&xdr_data);
+  return rv;
+}
+

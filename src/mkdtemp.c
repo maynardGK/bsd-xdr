@@ -33,6 +33,12 @@
 #if defined(_MSC_VER) || defined(__MINGW32__)
 # include <io.h>
 # include <process.h> // for getpid()
+# include <direct.h> // for mkdir()
+# if defined(_MSC_VER)
+/* MSVC is missing a few definitions from sys/types and sys/stat */
+typedef int pid_t;
+#  define S_ISDIR(m)  (((m) & _S_IFMT) == _S_IFDIR)
+# endif
 #else
 # include <unistd.h> // for getpid()
 #endif
@@ -49,7 +55,7 @@ do_mkdtemp (char *path)
   /* To guarantee multiple calls generate unique names even if
      the file is not created. 676 different possibilities with 7
      or more X's, 26 with 6 or less. */
-  static char xtra[2] = "aa";
+  static char xtra[2] = { 'a', 'a' };
   int xcnt = 0;
 
   pid = getpid ();
@@ -70,7 +76,7 @@ do_mkdtemp (char *path)
   /* Set remaining X's to pid digits with 0's to the left. */
   while (*--trv == 'X')
     {
-      *trv = (pid % 10) + '0';
+      *trv = (char)((pid % 10) + '0');
       pid /= 10;
     }
 

@@ -41,6 +41,11 @@
 
 #include "xdr_private.h"
 
+#ifdef _MSC_VER
+# pragma warning(push)
+# pragma warning(disable:4100)
+#endif
+
 /* ARGSUSED */
 static bool_t
 x_putlong (XDR * xdrs, const long *longp)
@@ -156,3 +161,7 @@ xdr_sizeof (xdrproc_t func, void *data)
     free (x.x_private);
   return (stat == TRUE ? x.x_handy : 0);
 }
+
+#ifdef _MSC_VER
+# pragma warning(pop)
+#endif

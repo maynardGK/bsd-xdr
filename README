@@ -5,7 +5,8 @@ with explicit permission from the copyright holder (Sun
 Microsystems) to a BSD license.  See the LICENSE file for
 more information.
 
-Some of the goals of this port:
+The goals of this port
+=========================================
   Maintain the BSD license rather than copylefting it, as
     in portableXDR and various other versions.
   Avoid autotools.
@@ -18,4 +19,13 @@ Some of the goals of this port:
     libraries.
   Verify identical output on a variety of platforms, especially 32-
     and 64-bit hosts.
+
+Tested platforms
+=========================================
+  cygwin (cygwin 1.5.25, gcc-3.4.5)
+  cygwin (cygwin 1.7.0-48, gcc-4.3.2beta2)
+  mingw  (mingw-runtime 3.11 or later, gcc-3.4.5)
+#  msvc   (Visual Studio C++ 2005)
+#  linux  (32bit, gcc-4.2.2, glibc-2.6.1)
+#  linux  (64bit, gcc-4.1, glibc-2.4)
 
