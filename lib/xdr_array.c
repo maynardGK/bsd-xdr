@@ -66,12 +66,12 @@ xdr_array (XDR * xdrs, caddr_t * addrp, u_int * sizep, u_int maxsize,
   /* like strings, arrays are really counted arrays */
   if (!xdr_u_int (xdrs, sizep))
     {
-      return (FALSE);
+      return FALSE;
     }
   c = *sizep;
   if ((c > maxsize || UINT_MAX / elsize < c) && (xdrs->x_op != XDR_FREE))
     {
-      return (FALSE);
+      return FALSE;
     }
   nodesize = c * elsize;
 
@@ -84,18 +84,18 @@ xdr_array (XDR * xdrs, caddr_t * addrp, u_int * sizep, u_int maxsize,
       {
       case XDR_DECODE:
         if (c == 0)
-          return (TRUE);
+          return TRUE;
         *addrp = target = mem_alloc (nodesize);
         if (target == NULL)
           {
             xdr_warnx ("xdr_array: out of memory");
-            return (FALSE);
+            return FALSE;
           }
         memset (target, 0, nodesize);
         break;
 
       case XDR_FREE:
-        return (TRUE);
+        return TRUE;
 
       case XDR_ENCODE:
         break;
@@ -143,9 +143,9 @@ xdr_vector (XDR * xdrs, char *basep, u_int nelem, u_int elemsize,
     {
       if (!(*xdr_elem) (xdrs, elptr))
         {
-          return (FALSE);
+          return FALSE;
         }
       elptr += elemsize;
     }
-  return (TRUE);
+  return TRUE;
 }

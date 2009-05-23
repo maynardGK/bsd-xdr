@@ -135,7 +135,7 @@ xdr_float (XDR * xdrs, float *fp)
 #else /* not IEEEFP */
       vsp = (struct vax_single *) fp;
       if (!XDR_GETINT32 (xdrs, (int32_t *) & is))
-        return (FALSE);
+        return FALSE;
       for (i = 0, lim = sgl_limits;
            i < sizeof (sgl_limits) / sizeof (struct sgl_limits); i++, lim++)
         {
@@ -151,14 +151,13 @@ xdr_float (XDR * xdrs, float *fp)
       vsp->mantissa1 = (is.mantissa >> 16);
     doneit:
       vsp->sign = is.sign;
-      return (TRUE);
+      return TRUE;
 #endif /* not IEEEFP */
 
     case XDR_FREE:
-      return (TRUE);
+      return TRUE;
     }
-  /* NOTREACHED */
-  return (FALSE);
+  return FALSE;
 }
 
 #if defined(__vax__)
@@ -281,7 +280,7 @@ xdr_double (XDR * xdrs, double *dp)
 #else /* not IEEEFP */
       lp = (int32_t *) & id;
       if (!XDR_GETINT32 (xdrs, lp++) || !XDR_GETINT32 (xdrs, lp))
-        return (FALSE);
+        return FALSE;
       for (i = 0, lim = dbl_limits;
            i < sizeof (dbl_limits) / sizeof (struct dbl_limits); i++, lim++)
         {
@@ -301,12 +300,11 @@ xdr_double (XDR * xdrs, double *dp)
     doneit:
       vd.sign = id.sign;
       *dp = *((double *) &vd);
-      return (TRUE);
+      return TRUE;
 #endif /* not IEEEFP */
 
     case XDR_FREE:
-      return (TRUE);
+      return TRUE;
     }
-  /* NOTREACHED */
-  return (FALSE);
+  return FALSE;
 }

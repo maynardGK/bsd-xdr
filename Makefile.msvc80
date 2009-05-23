@@ -152,13 +152,32 @@ TEST_XDRSTDIO_LIBS_STAT = $(TEST_XDR_LIBS_STAT)
 TEST_XDRSTDIO_LDFLAGS      =
 TEST_XDRSTDIO_LDFLAGS_STAT =
 
+TEST_XDRSIZEOF_HDRS = $(TEST_HDRS) $(LIBXDR_HDRS) $(GETOPT_HDRS)
+TEST_XDRSIZEOF_SRCS = src/test/xdrsizeof_test.c \
+	src/test/test_common.c \
+	src/test/test_data.c \
+	src/test/test_xdrs.c \
+	$(GETOPT_SRCS) $(MKDTEMP_SRCS)
+TEST_XDRSIZEOF_OBJS = $(TEST_XDRSIZEOF_SRCS:%.c=$(PLATFORM)/%.$(O))
+TEST_XDRSIZEOF_OBJS_STAT = $(TEST_XDRSIZEOF_SRCS:%.c=$(PLATFORM)/%.$(STATIC_O))
+TEST_XDRSIZEOF_LIBS = $(TEST_XDR_LIBS)
+TEST_XDRSIZEOF_LIBS_STAT = $(TEST_XDR_LIBS_STAT)
+TEST_XDRSIZEOF_LDFLAGS      =
+TEST_XDRSIZEOF_LDFLAGS_STAT =
+
 TEST_PROGS = $(PLATFORM)/xdrmem_test$(EXEEXT) \
 	$(PLATFORM)/xdrmem_test_static$(EXEEXT) \
 	$(PLATFORM)/xdrstdio_test$(EXEEXT) \
 	$(PLATFORM)/xdrstdio_test_static$(EXEEXT) \
+	$(PLATFORM)/xdrsizeof_test$(EXEEXT) \
+	$(PLATFORM)/xdrsizeof_test_static$(EXEEXT) \
 
-TEST_OBJS = $(TEST_XDRMEM_OBJS) $(TEST_XDRSTDIO_OBJS)
-TEST_OBJS_STAT = $(TEST_XDRMEM_OBJS_STAT) $(TEST_XDRSTDIO_OBJS_STAT)
+TEST_OBJS = $(TEST_XDRMEM_OBJS) \
+	$(TEST_XDRSTDIO_OBJS) \
+	$(TEST_XDRSIZEOF_OBJS)
+TEST_OBJS_STAT = $(TEST_XDRMEM_OBJS_STAT) \
+	$(TEST_XDRSTDIO_OBJS_STAT) \
+	$(TEST_XDRSIZEOF_OBJS_STAT)
 
 all: 
 	@if test $(MAKELEVEL) -eq 0 ; then \
@@ -211,6 +230,16 @@ $(PLATFORM)/xdrstdio_test_static$(EXEEXT): $(TEST_XDRSTDIO_OBJS_STAT) $(XDR_LIBR
 		$(TEST_XDRSTDIO_OBJS_STAT) $(TEST_XDRSTDIO_LIBS_STAT)
 	mt -nologo -manifest $@.manifest "-outputresource:$@;1"
 
+$(PLATFORM)/xdrsizeof_test$(EXEEXT): $(TEST_XDRSIZEOF_OBJS) $(XDR_LIBRARIES)
+	$(LINK_C) $(EXE_LDEXTRA) $(TEST_XDRSIZEOF_LDFLAGS) $(LDFLAGS) -out:$@ \
+		$(TEST_XDRSIZEOF_OBJS) $(TEST_XDRSIZEOF_LIBS)
+	mt -nologo -manifest $@.manifest "-outputresource:$@;1"
+
+$(PLATFORM)/xdrsizeof_test_static$(EXEEXT): $(TEST_XDRSIZEOF_OBJS_STAT) $(XDR_LIBRARIES)
+	$(LINK_C) $(EXE_LDEXTRA) $(TEST_XDRSIZEOF_LDFLAGS_STAT) $(LDFLAGS) -out:$@ \
+		$(TEST_XDRSIZEOF_OBJS_STAT) $(TEST_XDRSIZEOF_LIBS_STAT)
+	mt -nologo -manifest $@.manifest "-outputresource:$@;1"
+
 .PHONY: clean
 clean:
 	-rm -f $(LIBXDR_OBJS) $(LIBXDR_OBJS_STAT) $(DEFFILE) $(TEST_OBJS) $(TEST_OBJS_STAT) $(STAMP)
@@ -242,6 +271,7 @@ $(PLATFORM)/src/test/test_data.$(O): src/test/test_data.c $(TEST_HDRS) $(LIBXDR_
 $(PLATFORM)/src/test/test_xdrs.$(O): src/test/test_xdrs.c $(TEST_HDRS) $(LIBXDR_HDRS) $(GETOPT_HDRS)
 $(PLATFORM)/src/test/xdrmem_test.$(O): src/test/xdrmem_test.c $(TEST_XDRMEM_HDRS) $(GETOPT_HDRS)
 $(PLATFORM)/src/test/xdrstdio_test.$(O): src/test/xdrstdio_test.c $(TEST_XDRSTDIO_HDRS) $(GETOPT_HDRS)
+$(PLATFORM)/src/test/xdrsizeof_test.$(O): src/test/xdrsizeof_test.c $(TEST_XDRSTDIO_HDRS) $(GETOPT_HDRS)
 $(PLATFORM)/src/getopt_long.$(O):         src/getopt_long.c src/getopt.h
 $(PLATFORM)/src/mkdtemp.$(O):        src/mkdtemp.c
 

@@ -65,6 +65,7 @@ else
   endif
 endif
 
+CFLAGS+=-fno-strict-aliasing
 
 INCLUDES = -I$(top_srcdir) -I$(top_builddir)
 
@@ -100,8 +101,22 @@ TEST_XDRSTDIO_OBJS = $(TEST_XDRSTDIO_SRCS:%.c=$(PLATFORM)/%.$(O))
 TEST_XDRSTDIO_LIBS = $(TEST_XDR_LIBS)
 TEST_XDRSTDIO_LDFLAGS = $(TEST_XDR_LDFLAGS)
 
-TEST_PROGS = $(PLATFORM)/xdrmem_test$(EXEEXT) $(PLATFORM)/xdrstdio_test$(EXEEXT)
-TEST_OBJS = $(TEST_XDRMEM_OBJS) $(TEST_XDRSTDIO_OBJS)
+TEST_XDRSIZEOF_HDRS = $(TEST_HDRS) $(LIB_HDRS) $(GETOPT_HDRS)
+TEST_XDRSIZEOF_SRCS = src/test/xdrsizeof_test.c \
+	src/test/test_common.c \
+	src/test/test_data.c \
+	src/test/test_xdrs.c \
+	$(GETOPT_SRCS) $(MKDTEMP_SRCS)
+TEST_XDRSIZEOF_OBJS = $(TEST_XDRSIZEOF_SRCS:%.c=$(PLATFORM)/%.$(O))
+TEST_XDRSIZEOF_LIBS = $(TEST_XDR_LIBS)
+TEST_XDRSIZEOF_LDFLAGS = $(TEST_XDR_LDFLAGS)
+
+TEST_PROGS = $(PLATFORM)/xdrmem_test$(EXEEXT) \
+	$(PLATFORM)/xdrstdio_test$(EXEEXT) \
+	$(PLATFORM)/xdrsizeof_test$(EXEEXT)
+TEST_OBJS = $(TEST_XDRMEM_OBJS) \
+	$(TEST_XDRSTDIO_OBJS) \
+	$(TEST_XDRSIZEOF_OBJS)
 
 all: 
 	@if test $(MAKELEVEL) -eq 0 ; then \
@@ -140,6 +155,9 @@ $(PLATFORM)/xdrmem_test$(EXEEXT): $(TEST_XDRMEM_OBJS) $(XDR_LIBRARIES)
 $(PLATFORM)/xdrstdio_test$(EXEEXT): $(TEST_XDRSTDIO_OBJS) $(XDR_LIBRARIES)
 	$(CC) $(TEST_XDRSTDIO_LDFLAGS) $(LDFLAGS) -o $@ $(TEST_XDRSTDIO_OBJS) $(TEST_XDRSTDIO_LIBS)
 
+$(PLATFORM)/xdrsizeof_test$(EXEEXT): $(TEST_XDRSIZEOF_OBJS) $(XDR_LIBRARIES)
+	$(CC) $(TEST_XDRSIZEOF_LDFLAGS) $(LDFLAGS) -o $@ $(TEST_XDRSIZEOF_OBJS) $(TEST_XDRSIZEOF_LIBS)
+
 $(PLATFORM)/%.$(O) : %.c
 	$(CC) $(INCLUDES) $(CPPFLAGS) $(CFLAGS) -o $@ -c $<
 
@@ -175,6 +193,7 @@ $(PLATFORM)/src/test/test_data.$(O): src/test/test_data.c $(TEST_HDRS) $(LIB_HDR
 $(PLATFORM)/src/test/test_xdrs.$(O): src/test/test_xdrs.c $(TEST_HDRS) $(LIB_HDRS) $(GETOPT_HDRS)
 $(PLATFORM)/src/test/xdrmem_test.$(O): src/test/xdrmem_test.c $(TEST_XDRMEM_HDRS) $(GETOPT_HDRS)
 $(PLATFORM)/src/test/xdrstdio_test.$(O): src/test/xdrstdio_test.c $(TEST_XDRSTDIO_HDRS) $(GETOPT_HDRS)
+$(PLATFORM)/src/test/xdrsizeof_test.$(O): src/test/xdrsizeof_test.c $(TEST_XDRSTDIO_HDRS) $(GETOPT_HDRS)
 $(PLATFORM)/src/getopt.$(O):         src/getopt.c src/getopt.h
 $(PLATFORM)/src/getopt1.$(O):        src/getopt1.c src/getopt.h
 $(PLATFORM)/src/mkdtemp.$(O):        src/mkdtemp.c

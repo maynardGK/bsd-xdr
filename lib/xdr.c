@@ -76,7 +76,7 @@ xdr_free (xdrproc_t proc, void *objp)
 bool_t
 xdr_void (void)
 {
-  return (TRUE);
+  return TRUE;
 }
 
 
@@ -100,7 +100,7 @@ xdr_int (XDR * xdrs, int *ip)
           return FALSE;
         }
       *ip = (int) l;
-      return (TRUE);
+      return TRUE;
 
     case XDR_FREE:
       return TRUE;
@@ -138,7 +138,7 @@ xdr_u_int (XDR * xdrs, u_int * up)
     case XDR_FREE:
       return TRUE;
     }
-  return (FALSE);
+  return FALSE;
 #elif UINT_MAX == ULONG_MAX
   return xdr_u_long (xdrs, (u_long *) up);
 #else
@@ -525,7 +525,7 @@ xdr_bool (XDR * xdrs, bool_t * bp)
 
     case XDR_DECODE:
       if (!XDR_GETLONG (xdrs, &lb))
-        return (FALSE);
+        return FALSE;
       *bp = (lb == XDR_FALSE) ? FALSE : TRUE;
       return TRUE;
 
@@ -647,7 +647,7 @@ xdr_bytes (XDR * xdrs, char **cpp, u_int * sizep, u_int maxsize)
 
   nodesize = *sizep;
   if ((nodesize > maxsize) && (xdrs->x_op != XDR_FREE))
-    return (FALSE);
+    return FALSE;
 
   /*
    * now deal with the actual bytes
@@ -656,7 +656,7 @@ xdr_bytes (XDR * xdrs, char **cpp, u_int * sizep, u_int maxsize)
     {
     case XDR_DECODE:
       if (nodesize == 0)
-        return (TRUE);
+        return TRUE;
       if (sp == NULL)
         *cpp = sp = mem_alloc (nodesize);
       if (sp == NULL)
@@ -862,7 +862,7 @@ xdr_int64_t (XDR * xdrs, int64_t * llp)
     case XDR_FREE:
       return TRUE;
     }
-  return (FALSE);
+  return FALSE;
 }
 
 

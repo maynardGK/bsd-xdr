@@ -722,8 +722,9 @@ test_xdrmem_enum (opts * o)
   xdr_data.buf_sz = 80;
 
   for (i=0;i<TEST_DATA_SZ;i++) data[i] = ENUM_DATA[i];
-  return test_basic_type_core_xdr_enum (o->log, testid, (enum_t*) data,
-      TEST_DATA_SZ, &xdrmem_stream_ops, TRUE, (void *)&xdr_data);
+  return test_basic_type_core_xdr_enum (o->log, testid, (enum_t*)(void *)data,
+                                        TEST_DATA_SZ, &xdrmem_stream_ops, TRUE,
+					(void *)&xdr_data);
 }
 
 bool_t

@@ -721,7 +721,7 @@ test_core_xdr_array (log_opts * log,
     }
 
   (*(stream_ops->create_cb))(&xdr_enc, XDR_ENCODE, xdr_data);
-  if (!xdr_array (&xdr_enc, (char **)(void *)(&data), &data_cnt, TEST_DATA_SZ + 7,
+  if (!xdr_array (&xdr_enc, (char **)&data, &data_cnt, TEST_DATA_SZ + 7,
                   sizeof(int16_t), (xdrproc_t)xdr_int16_t))
     {
       log_msg (log, XDR_LOG_INFO,
@@ -737,7 +737,7 @@ test_core_xdr_array (log_opts * log,
 
   /* decode into allocated buffer */
   (*(stream_ops->create_cb))(&xdr_dec, XDR_DECODE, xdr_data);
-  if (!xdr_array (&xdr_dec, (char **)(void *)&p, &p_cnt, TEST_DATA_SZ + 7,
+  if (!xdr_array (&xdr_dec, (char **)&p, &p_cnt, TEST_DATA_SZ + 7,
       sizeof(int16_t), (xdrproc_t)xdr_int16_t))
     {
       log_msg (log, XDR_LOG_INFO,
@@ -779,7 +779,7 @@ test_core_xdr_array (log_opts * log,
    * it works.
    */
   (*(stream_ops->create_cb))(&xdr_destroy, XDR_FREE, xdr_data);
-  if (!xdr_array (&xdr_destroy, (char **)(void *)&p, &p_cnt, TEST_DATA_SZ + 7,
+  if (!xdr_array (&xdr_destroy, (char **)&p, &p_cnt, TEST_DATA_SZ + 7,
                   sizeof(int16_t), (xdrproc_t)xdr_int16_t))
     {
       log_msg (log, XDR_LOG_INFO,

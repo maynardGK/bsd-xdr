@@ -439,7 +439,8 @@ encode_union_data (const char *testid, log_opts *o, XDR *xdrs,
         log_msg (o, XDR_LOG_DEBUG2,
                  "%s: about to encode union(float) (cnt=%d, val=%.8e)\n",
                  testid, cnt, data->value.flt);
-        if (!xdr_union (xdrs, (enum_t *)&(data->type), (char *)&(data->value), test_union_dscrim, NULL_xdrproc_t))
+        if (!xdr_union (xdrs, (enum_t *)&(data->type), (char *)&(data->value),
+			test_union_dscrim, NULL_xdrproc_t))
           {
             log_msg (o, XDR_LOG_INFO,
                      "%s: failed xdr_union (float) XDR_ENCODE (cnt=%d, val=%.8e)\n",
@@ -451,7 +452,8 @@ encode_union_data (const char *testid, log_opts *o, XDR *xdrs,
         log_msg (o, XDR_LOG_DEBUG2,
                  "%s: about to encode union(double) (cnt=%d, val=%.15e)\n",
                  testid, cnt, data->value.dbl);
-        if (!xdr_union (xdrs, (enum_t *)&(data->type), (char *)&(data->value), test_union_dscrim, NULL_xdrproc_t))
+        if (!xdr_union (xdrs, (enum_t *)&(data->type), (char *)&(data->value),
+			test_union_dscrim, NULL_xdrproc_t))
           {
             log_msg (o, XDR_LOG_INFO,
                      "%s: failed xdr_union (double) XDR_ENCODE (cnt=%d, val=%.15e)\n",
@@ -463,7 +465,8 @@ encode_union_data (const char *testid, log_opts *o, XDR *xdrs,
         log_msg (o, XDR_LOG_DEBUG2,
                  "%s: about to encode union(uint32) (cnt=%d, val=%" PRIu32 ")\n",
                  testid, cnt, data->value.u32);
-        if (!xdr_union (xdrs, (enum_t *)&(data->type), (char *)&(data->value), test_union_dscrim, NULL_xdrproc_t))
+        if (!xdr_union (xdrs, (enum_t *)&(data->type), (char *)&(data->value),
+			test_union_dscrim, NULL_xdrproc_t))
           {
             log_msg (o, XDR_LOG_INFO,
                      "%s: failed xdr_union (uint32) XDR_ENCODE (cnt=%d, val=%" PRIu32 ")\n",
@@ -475,7 +478,8 @@ encode_union_data (const char *testid, log_opts *o, XDR *xdrs,
         log_msg (o, XDR_LOG_DEBUG2,
                  "%s: about to encode union(char) (cnt=%d, val=0x%02x)\n",
                  testid, cnt, data->value.c);
-        if (!xdr_union (xdrs, (enum_t *)&(data->type), (char *)&(data->value), test_union_dscrim, NULL_xdrproc_t))
+        if (!xdr_union (xdrs, (enum_t *)&(data->type), (char *)&(data->value),
+			test_union_dscrim, NULL_xdrproc_t))
           {
             log_msg (o, XDR_LOG_INFO,
                      "%s: failed xdr_union (char) XDR_ENCODE (cnt=%d, val=0x%02x)\n",
