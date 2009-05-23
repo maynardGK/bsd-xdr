@@ -1,3 +1,29 @@
+/* test_data.c - data, data structures, and functions to manipulate
+ *               them. Used by xdr tests.
+ * Copyright (c) 2009 Charles S. Wilson
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ * OTHER DEALINGS IN THE SOFTWARE.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
@@ -326,16 +352,16 @@ test_discrim_union_t UNION_DATA[TEST_DATA_SZ];
 
 const char OPAQUE_DATA[OPAQUE_DATA_SZ] =
 {
-  0xbd, 0x36, 0x56, 0x52, 0xff, 0x4a, 0x02, 0x81, 
-  0x96, 0x47, 0x6a, 0x5c, 0x60, 0x53, 0x30, 0xb6, 
-  0x87, 0x52, 0xf6, 0xff, 0x96, 0xad, 0xd9, 0xbb, 
-  0xd7, 0x6f, 0xb2, 0xa0, 0x21, 0xbd, 0x36, 0x9a, 
-  0x45, 0x85, 0x8f, 0x29, 0x8a, 0x7f, 0x2f, 0x3a, 
-  0xbb, 0x01, 0x3e, 0x98, 0xd2, 0x6b, 0xb3, 0xe0, 
-  0x25, 0x9b, 0x5f, 0xa9, 0x03, 0x29, 0x2f, 0x64, 
+  0xbd, 0x36, 0x56, 0x52, 0xff, 0x4a, 0x02, 0x81,
+  0x96, 0x47, 0x6a, 0x5c, 0x60, 0x53, 0x30, 0xb6,
+  0x87, 0x52, 0xf6, 0xff, 0x96, 0xad, 0xd9, 0xbb,
+  0xd7, 0x6f, 0xb2, 0xa0, 0x21, 0xbd, 0x36, 0x9a,
+  0x45, 0x85, 0x8f, 0x29, 0x8a, 0x7f, 0x2f, 0x3a,
+  0xbb, 0x01, 0x3e, 0x98, 0xd2, 0x6b, 0xb3, 0xe0,
+  0x25, 0x9b, 0x5f, 0xa9, 0x03, 0x29, 0x2f, 0x64,
   0x70, 0x38, 0x3b, 0xa8, 0x2e
 };
-const char * NAMES_DATA[TEST_DATA_SZ] = 
+const char * NAMES_DATA[TEST_DATA_SZ] =
 {
   "Alex Andrews",
   "Betty Boop",
@@ -373,7 +399,7 @@ bool_t
 xdr_pgn_t (XDR *xdrs, pgn_t *pp)
 {
   return (xdr_string (xdrs, (char **)&pp->name, MAX_NAME_LEN) &&
-          xdr_reference (xdrs, (char **)&pp->gnp, 
+          xdr_reference (xdrs, (char **)&pp->gnp,
                          sizeof(gnumbers_t), (xdrproc_t)xdr_gnumbers_t));
 }
 
@@ -703,7 +729,7 @@ compare_pgn (pgn_t *lhs, pgn_t *rhs)
   if (!lhs->gnp && !rhs->gnp) return 0; /* lhs == rhs */
   if (!lhs->gnp && rhs->gnp) return -1; /* lhs < rhs */
   if (lhs->gnp && !rhs->gnp) return 1; /* lhs > rhs */
-  
+
   if (lhs->gnp->g_assets < rhs->gnp->g_assets) return -1; /* lhs < rhs */
   if (lhs->gnp->g_assets > rhs->gnp->g_assets) return 1; /* lhs > rhs */
 
@@ -738,7 +764,7 @@ print_pgn (FILE * f, pgn_t *pgn)
  */
 
 /* xdr_pgn_node_t_RECURSIVE
- * DECODE: populate a node, where the storage already exists and 
+ * DECODE: populate a node, where the storage already exists and
  *         the data is known to be present in the xdr stream.
  *         Delegate to xdr_pgn_list_t_RECURSIVE for next_pgn element.
  * ENCODE: serialize a node that actually exists to the xdr stream.
@@ -784,7 +810,7 @@ xdr_pgn_list_t_RECURSIVE (XDR *xdrs, pgn_list_t *pgn_list)
  * That is, the payload should not be a pointer and should be the first
  * element. The next* pointer should be the final element. With some
  * adjustment, the payload could consist of multiple non-ptr fields.
- * rather than a single struct. However, neither the payload nor the 
+ * rather than a single struct. However, neither the payload nor the
  * list management fields may contain pointers to sentinel nodes or
  * to head* or tail* elements; xdr can't serialize data structures where
  * more than one pointer references the same memory location.
@@ -797,18 +823,18 @@ xdr_pgn_list_t_RECURSIVE (XDR *xdrs, pgn_list_t *pgn_list)
  * The following algorithm description is derived from that
  * at the URL referenced above:
  *
- * The first statement determines whether more data exists, so that this 
+ * The first statement determines whether more data exists, so that this
  * Boolean information can be serialized. This statement is unnecessary in
  * the XDR_DECODE case, because the value of the more_data field is not
  * known until the next statement deserializes it.
- * 
+ *
  * The next statement translates the more_data field of the XDR implicit union.
  * If no more data exists, set this last pointer to Null to indicate the end
  * of the list and return True because the operation is done.
- * 
+ *
  * Note: Setting the pointer to Null is important only in the XDR_ENCODE case
  * because the pointer is already null in the XDR_ENCODE and XDR_FREE cases.
- * 
+ *
  * Next, if the direction is XDR_FREE, the value of the nextp variable field is
  * set to indicate the location of the next pointer in the list. This step
  * dereferences the pgn_list variable to find the location of the next item in
@@ -816,7 +842,7 @@ xdr_pgn_list_t_RECURSIVE (XDR *xdrs, pgn_list_t *pgn_list)
  * freed and no longer valid. This step is not taken for all directions because,
  * in the XDR_DECODE direction, the value of the pgn_list field will not be set
  * until the next statement.
- * 
+ *
  * The next statement translates the data in the node using the xdr_reference
  * primitive. The xdr_reference function is similar to the xdr_pointer subroutine,
  * used previously, but it does not serialize/deserialize the Boolean indicating
@@ -829,12 +855,12 @@ xdr_pgn_list_t_RECURSIVE (XDR *xdrs, pgn_list_t *pgn_list)
  * pgn_node_t type. The xdr_pgn_node_t function is not used because it is recursive.
  * The non-recursive implementation instead uses xdr_pgn_t, which translates all
  * nonrecursive portions.
- * 
+ *
  * Note: This method works only if the pgn_t field is the first member in each node,
  * so that their addresses are identical when passed to the xdr_reference primitive.
- * 
+ *
  * Finally, the function updates the pgn_list variable to point to the next item in
- * the list. If the direction is XDR_FREE, it is set to the previously saved value. 
+ * the list. If the direction is XDR_FREE, it is set to the previously saved value.
  * Otherwise, the function dereferences the pgn_list variable to access its pgn_next
  * field. Though harder to understand than the recursive version, this nonrecursive
  * implementation is far less likely to cause errors in the C stack. The nonrecursive
@@ -860,7 +886,7 @@ xdr_pgn_list_t (XDR *xdrs, pgn_list_t *pgn_list)
       if (xdrs->x_op == XDR_FREE)
         nextp = &(*pgn_list)->pgn_next;
 
-      if (!xdr_reference (xdrs, 
+      if (!xdr_reference (xdrs,
                           (char **)pgn_list,     /* pgn_list is ptr to current node */
                           sizeof (pgn_node_t),   /* allocate for data + nextptr */
                           (xdrproc_t)xdr_pgn_t)) /* but only xdr the data here */
@@ -886,7 +912,7 @@ init_pgn_list (pgn_list_t *pgn_list)
 {
   int cnt;
   pgn_node_t *newp;
-  
+
   for (cnt = 0; cnt < TEST_DATA_SZ; cnt++)
     {
       init_pgn_node (&newp, cnt);
@@ -909,7 +935,7 @@ free_pgn_list (pgn_list_t *pgn_list)
 {
   if (!pgn_list) return;
   free_pgn_node (*pgn_list);
-  *pgn_list = NULL;  
+  *pgn_list = NULL;
 }
 
 void
@@ -970,38 +996,38 @@ xdr_primitive_struct_t (XDR *xdrs, test_struct_of_primitives_t *ps)
 void
 init_primitive_struct (test_struct_of_primitives_t *ps)
 {
-  ps->a =    INT_DATA [ 4]; 
-  ps->b =   UINT_DATA [ 5]; 
-  ps->c =   LONG_DATA [ 6]; 
-  ps->d =  ULONG_DATA [ 7]; 
-  ps->e =  SHORT_DATA [ 8]; 
+  ps->a =    INT_DATA [ 4];
+  ps->b =   UINT_DATA [ 5];
+  ps->c =   LONG_DATA [ 6];
+  ps->d =  ULONG_DATA [ 7];
+  ps->e =  SHORT_DATA [ 8];
   ps->f = USHORT_DATA [ 9];
 #if CHAR_MIN < 0
-  ps->g =  SCHAR_DATA [10]; 
+  ps->g =  SCHAR_DATA [10];
 #else
-  ps->g =  UCHAR_DATA [10]; 
+  ps->g =  UCHAR_DATA [10];
 #endif
-  ps->h =  UCHAR_DATA [11]; 
-  ps->i =   INT8_DATA [12]; 
-  ps->j =  UINT8_DATA [13]; 
-  ps->k =  UINT8_DATA [14]; 
-  ps->l =  INT16_DATA [15]; 
-  ps->m = UINT16_DATA [16]; 
-  ps->n = UINT16_DATA [17]; 
-  ps->o =  INT32_DATA [18]; 
-  ps->p = UINT32_DATA [19]; 
-  ps->q = UINT32_DATA [ 4]; 
-  ps->r =  INT64_DATA [ 5]; 
-  ps->s = UINT64_DATA [ 6]; 
-  ps->t = UINT64_DATA [ 7]; 
+  ps->h =  UCHAR_DATA [11];
+  ps->i =   INT8_DATA [12];
+  ps->j =  UINT8_DATA [13];
+  ps->k =  UINT8_DATA [14];
+  ps->l =  INT16_DATA [15];
+  ps->m = UINT16_DATA [16];
+  ps->n = UINT16_DATA [17];
+  ps->o =  INT32_DATA [18];
+  ps->p = UINT32_DATA [19];
+  ps->q = UINT32_DATA [ 4];
+  ps->r =  INT64_DATA [ 5];
+  ps->s = UINT64_DATA [ 6];
+  ps->t = UINT64_DATA [ 7];
   ps->X_hyper   =      HYPER_DATA [ 8];
   ps->X_u_hyper =     UHYPER_DATA [ 9];
   ps->X_ll      =   LONGLONG_DATA [10];
   ps->X_ull     =  ULONGLONG_DATA [11];
-  ps->u = FLOAT_DATA  [12]; 
-  ps->v = DOUBLE_DATA [13]; 
-  ps->w = BOOL_DATA   [14]; 
-  ps->x = ENUM_DATA   [15]; 
+  ps->u = FLOAT_DATA  [12];
+  ps->v = DOUBLE_DATA [13];
+  ps->w = BOOL_DATA   [14];
+  ps->x = ENUM_DATA   [15];
 }
 
 int

@@ -1,4 +1,4 @@
-/* xdr_private.c - declarations of utility functions for porting xdr
+/* xdr_private.c - utility functions for porting xdr
  *
  * Copyright (c) 2009 Charles S. Wilson
  *

@@ -118,7 +118,7 @@ TEST_OBJS = $(TEST_XDRMEM_OBJS) \
 	$(TEST_XDRSTDIO_OBJS) \
 	$(TEST_XDRSIZEOF_OBJS)
 
-all: 
+all:
 	@if test $(MAKELEVEL) -eq 0 ; then \
 	  if test "$(PLATFORM)" = "unknown" ; then \
 	    echo "Can't build for $(uname) using this makefile" 1>&2 ;\

@@ -204,7 +204,7 @@ start:
 			place = EMSG;
 			if (IN_ORDER) {
 				/*
-				 * GNU extension: 
+				 * GNU extension:
 				 * return non-option as argument to option 1
 				 */
 				optarg = nargv[optind++];

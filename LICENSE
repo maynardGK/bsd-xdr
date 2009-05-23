@@ -18,21 +18,25 @@ included in each source file to which it applies, and is also
 available in licenses/MIT_X.
 
 Some other files in this distribution, especially test programs,
-may be licensed under certain other free licenses. For the most
-part, these are non-copyleft. See below for details.
+may be licensed under certain other free licenses.  These are all
+permissive, rather than copyleft, licenses.  See below for details.
+
+All code under src/test/ is provided under the MIT/X license.  The
+full text of that license is included in each source file, and may
+also be found in licenses/MIT_X.
 
 src/getopt.h
 src/getopt_long.c
    These are derived from the NetBSD's libgetopt, and are provided
-   under a 2-clause BSD license. The full text of this license is
+   under a 2-clause BSD license.  The full text of this license is
    included in each source file, and is also available in
-   licenses/getopt. These files are used only by the test programs,
+   licenses/getopt.  These files are used only by the test programs,
    and only on those platforms that do not provide getopt (namely,
-   mingw and msvc). Original location:
+   mingw and msvc).  Original location:
      http://cvsweb.netbsd.org/bsdweb.cgi/pkgsrc/devel/libgetopt/files/
 
-msvc/inttypes.h
-msvc/stdint.h
+src/msvc/inttypes.h
+src/msvc/stdint.h
    These are msvc-specific replacements for C99-standard
    headers that are missing from msvc 2005 (8.0) and earlier.
    They (or a suitable similar replacement) are required
@@ -40,14 +44,14 @@ msvc/stdint.h
    along with rpc/xdr.h and rpc/types.h).  They are provided
    under a 3-clause BSD license.  The full text of that license
    is embedded in each source file, and is also available in
-   licenses/msinttypes. Original location:
+   licenses/msinttypes.  Original location:
      http://code.google.com/p/msinttypes/  (rev. 24).
 
 src/mkdtemp.c
    Derived from an implementation that is part of the 'discover'
    package (SVN rev. 879)
      http://svn.debian.org/viewsvn/pkg-discover/discover/trunk/portability/mkdtemp.c?view=markup
-   and released under a 3-clause BSD license. The version above
+   and released under a 3-clause BSD license.  The version above
    was itself derived from NetBSD's internal utility implementation,
    gettemp.c.  This file is used only by the test programs, and
    only on those platforms that do not provide mkdtemp() (namely,

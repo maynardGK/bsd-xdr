@@ -61,15 +61,15 @@ CFLAGS+=-fno-strict-aliasing
 
 INCLUDES = -I$(top_srcdir) -I$(top_builddir)
 
-# compiling C code 
+# compiling C code
 COMPILE_C=	$(CC) $(OPTIM) $(CPPFLAGS) $(DEFS) $(CFLAGS) $(INCLUDES)
 
 # linking C code
-LINK_C =	$(LD) $(LDFLAGS) 
-DLL_LINK_C =	$(LD) -shared $(LDFLAGS) 
+LINK_C =	$(LD) $(LDFLAGS)
+DLL_LINK_C =	$(LD) -shared $(LDFLAGS)
 DLL_LDEXTRA =	-Wl,--soname -Wl,$(SONAME)
 EXE_LDEXTRA =	-L$(top_builddir)/$(PLATFORM)
-  
+
 ## Compilation rules
 $(PLATFORM)/%.$(O) : %.c
 	$(COMPILE_C) $(DYNAMICCPPFLAGS) $(DYNAMICCFLAGS) -o $@ -c $<
@@ -90,8 +90,8 @@ LIBXDR_ARFLAGS = cr
 
 XDR_LIBRARIES = $(PLATFORM)/$(SHRNAME) $(PLATFORM)/$(LIBNAME)
 
-TEST_XDR_LIBS      = $(PLATFORM)/$(SONAME) $(LIBXDR_DEPS) 
-TEST_XDR_LIBS_STAT = $(PLATFORM)/$(LIBNAME) $(LIBXDR_DEPS) 
+TEST_XDR_LIBS      = $(PLATFORM)/$(SONAME) $(LIBXDR_DEPS)
+TEST_XDR_LIBS_STAT = $(PLATFORM)/$(LIBNAME) $(LIBXDR_DEPS)
 TEST_HDRS = src/test/test_common.h src/test/test_data.h src/test/test_xdrs.h
 
 
@@ -150,7 +150,7 @@ TEST_OBJS_STAT = $(TEST_XDRMEM_OBJS_STAT) \
 	$(TEST_XDRSTDIO_OBJS_STAT) \
 	$(TEST_XDRSIZEOF_OBJS_STAT)
 
-all: 
+all:
 	@if test $(MAKELEVEL) -eq 0 ; then \
 	  echo "Building for $(PLATFORM)" ;\
 	  $(MAKE) -f $(TOP_MAKEFILE) recursive-all ENABLE_DEBUG=$(ENABLE_DEBUG) ;\

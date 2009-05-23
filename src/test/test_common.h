@@ -1,3 +1,28 @@
+/* test_common.h - utility functions and macros for xdr tests
+ * Copyright (c) 2009 Charles S. Wilson
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ * OTHER DEALINGS IN THE SOFTWARE.
+ */
+
 #ifndef _XDR_TEST_COMMON_H
 #define _XDR_TEST_COMMON_H
 
@@ -102,13 +127,13 @@ extern void log_msg (log_opts * o, int level, const char *fmt, ...);
 /* definitions for callbacks to manage/debug XDR streams */
 /*********************************************************/
 
-/* used to initialize the void* data. called once 
+/* used to initialize the void* data. called once
  * per test, and must be called prior to xdr_create_cb.
  */
 typedef bool_t (*xdr_test_setup_cb)(enum xdr_op, void * /*userdata*/);
 
 /* used to initialize an XDR * from the data given in
- * the void*. For instance, an xdrmem implementation 
+ * the void*. For instance, an xdrmem implementation
  * would use a supplied buf and bufsz to call
  * xdrmem_create(). An xdrstdio implementation would
  * open a specified file, then call xdrstdio_create().
@@ -123,7 +148,7 @@ typedef bool_t (*xdr_create_cb)(XDR *, enum xdr_op, void * /*userdata*/);
  * implementation might close the specified file.
  * This operation should be callable multiple times
  * on the same object, without harm. Should also
- * call XDR_DESTROY() -- which is not callable in 
+ * call XDR_DESTROY() -- which is not callable in
  * this way, so the xdr_finish_cb should use guard
  * variables in the void*.
  */
@@ -135,7 +160,7 @@ typedef bool_t (*xdr_finish_cb)(XDR *, enum xdr_op, void * /*userdata*/);
  */
 typedef void   (*xdr_debug_cb)(void * /*userdata*/);
 
-/* used to finalize the void* data. called once 
+/* used to finalize the void* data. called once
  * per test, and no other callbacks may be accessed
  * (other than xdr_init_test_cb) once this one has
  * been activated.

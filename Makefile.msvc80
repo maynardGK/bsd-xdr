@@ -78,12 +78,12 @@ LDFLAGS+=-nologo
 INCLUDES = -I$(top_srcdir_win32) -I$(top_builddir_win32) \
 	-I$(top_srcdir_win32)/src/msvc -I$(top_srcdir_win32)/src
 
-# compiling C code 
+# compiling C code
 COMPILE_C=	$(CC) $(RUNTIME) $(CPPFLAGS) $(DEFS) $(CFLAGS) $(INCLUDES)
 
 # linking C code
-LINK_C =	$(LD) -subsystem:console -machine:x86 $(LDFLAGS) 
-DLL_LINK_C =	$(LD) -dll -subsystem:console -machine:x86 $(LDFLAGS) 
+LINK_C =	$(LD) -subsystem:console -machine:x86 $(LDFLAGS)
+DLL_LINK_C =	$(LD) -dll -subsystem:console -machine:x86 $(LDFLAGS)
 DLL_LDEXTRA =	-manifest
 EXE_LDEXTRA =		-libpath:$(top_builddir)/$(PLATFORM) -manifest
 EXE_STAT_LDEXTRA =	-libpath:$(top_builddir)/$(PLATFORM) -manifest
@@ -93,7 +93,7 @@ ifeq ($(top_builddir), $(top_srcdir))
 else
   SOURCE_FILE=$(top_srcdir)/$<
 endif
-  
+
 ## Compilation rules
 $(PLATFORM)/%.$(O) : %.c
 	$(COMPILE_C) $(DYNAMICCPPFLAGS) $(DYNAMICCFLAGS) -Fo$@ -c $<
@@ -116,12 +116,12 @@ LIBXDR_OBJS = $(LIBXDR_SRCS:%.c=$(PLATFORM)/%.$(O))
 LIBXDR_OBJS_STAT = $(LIBXDR_SRCS:%.c=$(PLATFORM)/%.$(STATIC_O))
 LIBXDR_DEPS = ws2_32.lib
 LIBXDR_LDFLAGS = -implib:$(PLATFORM)/$(IMPNAME)
-LIBXDR_ARFLAGS=-nologo -subsystem:console -machine:x86 
+LIBXDR_ARFLAGS=-nologo -subsystem:console -machine:x86
 
 XDR_LIBRARIES = $(PLATFORM)/$(SHRNAME) $(PLATFORM)/$(LIBNAME)
 
-TEST_XDR_LIBS      = $(PLATFORM)/$(IMPNAME) $(LIBXDR_DEPS) 
-TEST_XDR_LIBS_STAT = $(PLATFORM)/$(LIBNAME) $(LIBXDR_DEPS) 
+TEST_XDR_LIBS      = $(PLATFORM)/$(IMPNAME) $(LIBXDR_DEPS)
+TEST_XDR_LIBS_STAT = $(PLATFORM)/$(LIBNAME) $(LIBXDR_DEPS)
 TEST_HDRS = src/test/test_common.h src/test/test_data.h src/test/test_xdrs.h
 
 
@@ -179,7 +179,7 @@ TEST_OBJS_STAT = $(TEST_XDRMEM_OBJS_STAT) \
 	$(TEST_XDRSTDIO_OBJS_STAT) \
 	$(TEST_XDRSIZEOF_OBJS_STAT)
 
-all: 
+all:
 	@if test $(MAKELEVEL) -eq 0 ; then \
 	  if test "$(PLATFORM)" = "unknown" ; then \
 	    echo "Can't build for $(uname) using this makefile" 1>&2 ;\

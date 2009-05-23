@@ -104,7 +104,7 @@ typedef int32_t   enum_t;
 /* byteswap and ntohl stuff */
 #if defined(__MINGW32__)
 /* Fortunately, the ntohl/htonl/ntohs/htons functions do NOT
-   require that the winsock DLL is initializaed with the WSAStartup
+   require that the winsock DLL is initialized with the WSAStartup
    functon, so they are safe to use by any caller. However, we
    declare (slow) versions of the bswap functions just in case. */
 # include <winsock2.h>
@@ -124,7 +124,7 @@ typedef int32_t   enum_t;
                       (((x) & 0xFF00000000000000ULL) >> 56))
 #elif defined(_MSC_VER)
 /* Fortunately, the ntohl/htonl/ntohs/htons functions do NOT
-   require that the winsock DLL is initializaed with the WSAStartup
+   require that the winsock DLL is initialized with the WSAStartup
    functon, so they are safe to use by any caller. However, we
    declare (slow) versions of the bswap functions just in case. */
 # include <winsock2.h>

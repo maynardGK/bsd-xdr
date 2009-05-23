@@ -191,8 +191,8 @@ xdrrec_create (XDR * xdrs, u_int sendsize, u_int recvsize, void *tcp_handle,
        */
       return;
     }
-  
-   
+
+
   /* allocate send buffer; insure BYTES_PER_UNIT alignment */
   rstrm->sendsize = sendsize = fix_buf_size (sendsize);
   rstrm->out_buffer = mem_alloc (rstrm->sendsize + BYTES_PER_XDR_UNIT);
