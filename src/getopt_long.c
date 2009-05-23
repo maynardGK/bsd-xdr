@@ -103,9 +103,7 @@ static void xwarnx(const char *fmt, ...) {
  * Compute the greatest common divisor of a and b.
  */
 static int
-gcd(a, b)
-	int a;
-	int b;
+gcd(int a, int b)
 {
 	int c;
 

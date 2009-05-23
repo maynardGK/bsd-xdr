@@ -103,7 +103,7 @@ $(PLATFORM)/%.$(STATIC_O) : %.c
 
 
 
-GETOPT_SRCS = src/getopt.c src/getopt1.c
+GETOPT_SRCS = src/getopt_long.c
 GETOPT_HDRS = src/getopt.h
 MKDTEMP_SRCS = src/mkdtemp.c
 
@@ -242,8 +242,7 @@ $(PLATFORM)/src/test/test_data.$(O): src/test/test_data.c $(TEST_HDRS) $(LIBXDR_
 $(PLATFORM)/src/test/test_xdrs.$(O): src/test/test_xdrs.c $(TEST_HDRS) $(LIBXDR_HDRS) $(GETOPT_HDRS)
 $(PLATFORM)/src/test/xdrmem_test.$(O): src/test/xdrmem_test.c $(TEST_XDRMEM_HDRS) $(GETOPT_HDRS)
 $(PLATFORM)/src/test/xdrstdio_test.$(O): src/test/xdrstdio_test.c $(TEST_XDRSTDIO_HDRS) $(GETOPT_HDRS)
-$(PLATFORM)/src/getopt.$(O):         src/getopt.c src/getopt.h
-$(PLATFORM)/src/getopt1.$(O):        src/getopt1.c src/getopt.h
+$(PLATFORM)/src/getopt_long.$(O):         src/getopt_long.c src/getopt.h
 $(PLATFORM)/src/mkdtemp.$(O):        src/mkdtemp.c
 
 
