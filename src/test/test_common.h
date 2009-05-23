@@ -5,6 +5,7 @@
 #include <rpc/types.h>
 #include <stdint.h>
 #include <inttypes.h>
+#include <limits.h> /* needed for CHAR_MIN */
 #include <getopt.h>
 #if defined(_MSC_VER) || defined(__MINGW32__)
 # include <io.h>

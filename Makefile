@@ -9,10 +9,12 @@ top_builddir:=$(shell pwd)
 
 ifeq ($(findstring CYGWIN,$(uname)),CYGWIN)
   PLATFORM:=cygwin
-else ifeq ($(findstring MINGW,$(uname)),MINGW)
-  PLATFORM:=mingw
 else
+  ifeq ($(findstring MINGW,$(uname)),MINGW)
+  PLATFORM:=mingw
+  else
   PLATFORM:=unknown
+  endif
 endif
 STAMP=stamp-$(PLATFORM)
 
@@ -31,7 +33,8 @@ ifeq ($(PLATFORM), cygwin)
   GETOPT_HDRS =
   MKDTEMP_SRCS =
   CFLAGS+=-Wall -Werror
-else ifeq ($(PLATFORM), mingw)
+else
+  ifeq ($(PLATFORM), mingw)
   CC=gcc
   O=o
   EXEEXT=.exe
@@ -46,7 +49,7 @@ else ifeq ($(PLATFORM), mingw)
   GETOPT_HDRS = src/getopt.h
   MKDTEMP_SRCS = src/mkdtemp.c
   CFLAGS+=-Wall -Werror
-else
+  else
   CC=gcc
   O=o
   EXEEXT=
@@ -59,6 +62,7 @@ else
   GETOPT_SRCS =
   GETOPT_HDRS =
   MKDTEMP_SRCS =
+  endif
 endif
 
 
@@ -111,6 +115,7 @@ all:
 	fi
 
 recursive-all: $(XDR_LIBRARIES) $(TEST_PROGS)
+
 
 $(STAMP):
 	@for d in $(PLATFORM)/lib $(PLATFORM)/src/test; do\

@@ -58,6 +58,10 @@ static u_int xdrmem_getpos (XDR *);
 static bool_t xdrmem_setpos (XDR *, u_int);
 static int32_t *xdrmem_inline_aligned (XDR *, u_int);
 static int32_t *xdrmem_inline_unaligned (XDR *, u_int);
+static bool_t xdrmem_getint32_aligned (XDR *, int32_t *);
+static bool_t xdrmem_putint32_aligned (XDR *, const int32_t *);
+static bool_t xdrmem_getint32_unaligned (XDR *, int32_t *);
+static bool_t xdrmem_putint32_unaligned (XDR *, const int32_t *);
 
 static const struct xdr_ops xdrmem_ops_aligned = {
   xdrmem_getlong_aligned,
@@ -67,7 +71,9 @@ static const struct xdr_ops xdrmem_ops_aligned = {
   xdrmem_getpos,
   xdrmem_setpos,
   xdrmem_inline_aligned,
-  xdrmem_destroy
+  xdrmem_destroy,
+  xdrmem_getint32_aligned,
+  xdrmem_putint32_aligned
 };
 
 static const struct xdr_ops xdrmem_ops_unaligned = {
@@ -78,7 +84,9 @@ static const struct xdr_ops xdrmem_ops_unaligned = {
   xdrmem_getpos,
   xdrmem_setpos,
   xdrmem_inline_unaligned,
-  xdrmem_destroy
+  xdrmem_destroy,
+  xdrmem_getint32_unaligned,
+  xdrmem_putint32_unaligned
 };
 
 /*
@@ -89,8 +97,9 @@ void
 xdrmem_create (XDR * xdrs, caddr_t addr, u_int size, enum xdr_op op)
 {
   xdrs->x_op = op;
-  xdrs->x_ops = ((unsigned long) addr & (sizeof (int32_t) - 1))
-    ? &xdrmem_ops_unaligned : &xdrmem_ops_aligned;
+  xdrs->x_ops = ((unsigned long)addr & (sizeof (int32_t) - 1))
+    ? (struct xdr_ops *)&xdrmem_ops_unaligned
+    : (struct xdr_ops *)&xdrmem_ops_aligned;
   xdrs->x_private = xdrs->x_base = addr;
   xdrs->x_handy = size;
 }
@@ -111,22 +120,22 @@ static bool_t
 xdrmem_getlong_aligned (XDR * xdrs, long *lp)
 {
   if (xdrs->x_handy < sizeof (int32_t))
-    return (FALSE);
+    return FALSE;
   xdrs->x_handy -= sizeof (int32_t);
-  *lp = ntohl (*(u_int32_t *) xdrs->x_private);
+  *lp = (int32_t) ntohl (*(u_int32_t *) xdrs->x_private);
   xdrs->x_private = (char *) xdrs->x_private + sizeof (int32_t);
-  return (TRUE);
+  return TRUE;
 }
 
 static bool_t
 xdrmem_putlong_aligned (XDR * xdrs, const long *lp)
 {
   if (xdrs->x_handy < sizeof (int32_t))
-    return (FALSE);
+    return FALSE;
   xdrs->x_handy -= sizeof (int32_t);
   *(u_int32_t *) xdrs->x_private = htonl ((u_int32_t) * lp);
   xdrs->x_private = (char *) xdrs->x_private + sizeof (int32_t);
-  return (TRUE);
+  return TRUE;
 }
 
 static bool_t
@@ -135,12 +144,12 @@ xdrmem_getlong_unaligned (XDR * xdrs, long *lp)
   u_int32_t l;
 
   if (xdrs->x_handy < sizeof (int32_t))
-    return (FALSE);
+    return FALSE;
   xdrs->x_handy -= sizeof (int32_t);
   memmove (&l, xdrs->x_private, sizeof (int32_t));
   *lp = ntohl (l);
   xdrs->x_private = (char *) xdrs->x_private + sizeof (int32_t);
-  return (TRUE);
+  return TRUE;
 }
 
 static bool_t
@@ -149,34 +158,34 @@ xdrmem_putlong_unaligned (XDR * xdrs, const long *lp)
   u_int32_t l;
 
   if (xdrs->x_handy < sizeof (int32_t))
-    return (FALSE);
+    return FALSE;
   xdrs->x_handy -= sizeof (int32_t);
   l = htonl ((u_int32_t) * lp);
   memmove (xdrs->x_private, &l, sizeof (int32_t));
   xdrs->x_private = (char *) xdrs->x_private + sizeof (int32_t);
-  return (TRUE);
+  return TRUE;
 }
 
 static bool_t
 xdrmem_getbytes (XDR * xdrs, char *addr, u_int len)
 {
   if (xdrs->x_handy < len)
-    return (FALSE);
+    return FALSE;
   xdrs->x_handy -= len;
   memmove (addr, xdrs->x_private, len);
   xdrs->x_private = (char *) xdrs->x_private + len;
-  return (TRUE);
+  return TRUE;
 }
 
 static bool_t
 xdrmem_putbytes (XDR * xdrs, const char *addr, u_int len)
 {
   if (xdrs->x_handy < len)
-    return (FALSE);
+    return FALSE;
   xdrs->x_handy -= len;
   memmove (xdrs->x_private, addr, len);
   xdrs->x_private = (char *) xdrs->x_private + len;
-  return (TRUE);
+  return TRUE;
 }
 
 static u_int
@@ -191,21 +200,17 @@ xdrmem_setpos (XDR * xdrs, u_int pos)
 {
   caddr_t newaddr = xdrs->x_base + pos;
   caddr_t lastaddr = (caddr_t) xdrs->x_private + xdrs->x_handy;
-#ifdef _MSC_VER
-# pragma warning(push)
-# pragma warning(disable:4127)
-#endif
-  if ((long) newaddr > (long) lastaddr
-      || (UINT_MAX < LONG_MAX
-          && (long) UINT_MAX < (long) lastaddr - (long) newaddr))
-    return (FALSE);
-#ifdef _MSC_VER
-# pragma warning(pop)
-#endif
+  size_t handy = lastaddr - newaddr;
+
+  if (newaddr > lastaddr
+      || newaddr < xdrs->x_base
+      || handy != (u_int) handy)
+    return FALSE;
+
   xdrs->x_private = newaddr;
-  xdrs->x_handy = (u_int) ((long) lastaddr - (long) newaddr);
+  xdrs->x_handy = (u_int) handy;
   /* XXX sizeof(u_int) <? sizeof(ptrdiff_t) */
-  return (TRUE);
+  return TRUE;
 }
 
 static int32_t *
@@ -234,4 +239,54 @@ xdrmem_inline_unaligned (XDR * xdrs, u_int len)
 #ifdef _MSC_VER
 # pragma warning(pop)
 #endif
+
+static bool_t
+xdrmem_getint32_aligned (XDR *xdrs, int32_t *ip)
+{
+  if (xdrs->x_handy < sizeof(int32_t))
+    return FALSE;
+  xdrs->x_handy -= sizeof(int32_t);
+  *ip = (int32_t) ntohl (*(u_int32_t *) xdrs->x_private);
+  xdrs->x_private = (char *) xdrs->x_private + sizeof (int32_t);
+  return TRUE;
+}
+
+static bool_t
+xdrmem_putint32_aligned (XDR *xdrs, const int32_t *ip)
+{
+  if (xdrs->x_handy < sizeof(int32_t))
+    return FALSE;
+  xdrs->x_handy -= sizeof(int32_t);
+  *(u_int32_t *) xdrs->x_private = htonl ((u_int32_t) * ip);
+  xdrs->x_private = (char *) xdrs->x_private + sizeof (int32_t);
+  return TRUE;
+}
+
+static bool_t
+xdrmem_getint32_unaligned (XDR *xdrs, int32_t *ip)
+{
+  u_int32_t l;
+
+  if (xdrs->x_handy < sizeof(int32_t))
+    return FALSE;
+  xdrs->x_handy -= sizeof(int32_t);
+  memmove (&l, xdrs->x_private, sizeof (int32_t));
+  *ip = (int32_t) ntohl (l);
+  xdrs->x_private = (char *) xdrs->x_private + sizeof (int32_t);
+  return TRUE;
+}
+
+static bool_t
+xdrmem_putint32_unaligned (XDR *xdrs, const int32_t *ip)
+{
+  u_int32_t l;
+
+  if (xdrs->x_handy < sizeof(int32_t))
+    return FALSE;
+  xdrs->x_handy -= sizeof(int32_t);
+  l = htonl ((u_int32_t) * ip);
+  memmove (xdrs->x_private, &l, sizeof (int32_t));
+  xdrs->x_private = (char *) xdrs->x_private + sizeof (int32_t);
+  return TRUE;
+}
 

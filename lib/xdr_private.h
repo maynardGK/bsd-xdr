@@ -53,12 +53,15 @@ void xdr_warnx (const char *fmt, ...);
 #  define BYTE_ORDER LITTLE_ENDIAN
 # endif
 # define IEEEFP
-#else  /* not _MSC_VER and not __MINGW32__ */
+#elif defined(__CYGWIN__)
+# include <machine/endian.h>
+# define IEEEFP
+#else  /* not _MSC_VER and not __MINGW32__, and not __CYGWIN__ */
 # if defined(__m68k__) || defined(__sparc__) || defined(__i386__) || \
      defined(__mips__) || defined(__ns32k__) || defined(__alpha__) || \
      defined(__arm__) || defined(__ppc__) || defined(__ia64__) || \
      defined(__arm26__) || defined(__sparc64__) || defined(__amd64__)
-#  include <machine/endian.h>
+#  include <endian.h>
 #  define IEEEFP
 # endif
 #endif /* not _MSC_VER and not __MINGW32__ */

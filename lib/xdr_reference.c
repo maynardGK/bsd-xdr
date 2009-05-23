@@ -44,6 +44,8 @@
 
 #include "xdr_private.h"
 
+#define LASTUNSIGNED    ((u_int)0-1)
+
 /*
  * XDR an indirect pointer
  * xdr_reference is for recursively translating a structure that is
@@ -63,14 +65,14 @@ xdr_reference (XDR * xdrs, caddr_t * pp, u_int size, xdrproc_t proc)
     switch (xdrs->x_op)
       {
       case XDR_FREE:
-        return (TRUE);
+        return TRUE;
 
       case XDR_DECODE:
         *pp = loc = (caddr_t) mem_alloc (size);
         if (loc == NULL)
           {
             xdr_warnx ("xdr_reference: out of memory");
-            return (FALSE);
+            return FALSE;
           }
         memset (loc, 0, size);
         break;
@@ -79,14 +81,14 @@ xdr_reference (XDR * xdrs, caddr_t * pp, u_int size, xdrproc_t proc)
         break;
       }
 
-  stat = (*proc) (xdrs, loc);
+  stat = (*proc) (xdrs, loc, LASTUNSIGNED);
 
   if (xdrs->x_op == XDR_FREE)
     {
       mem_free (loc, size);
       *pp = NULL;
     }
-  return (stat);
+  return stat;
 }
 
 
@@ -117,12 +119,12 @@ xdr_pointer (XDR * xdrs, char **objpp, u_int obj_size, xdrproc_t xdr_obj)
   more_data = (*objpp != NULL);
   if (!xdr_bool (xdrs, &more_data))
     {
-      return (FALSE);
+      return FALSE;
     }
   if (!more_data)
     {
       *objpp = NULL;
-      return (TRUE);
+      return TRUE;
     }
   return (xdr_reference (xdrs, objpp, obj_size, xdr_obj));
 }

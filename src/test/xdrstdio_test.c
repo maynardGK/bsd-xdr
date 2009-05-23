@@ -144,6 +144,7 @@ xdrstdio_create_cb (XDR *xdrs, enum xdr_op op, void * data)
 #ifdef _MSC_VER
 # pragma warning(push)
 # pragma warning(disable:4100)
+# pragma warning(disable:4127)
 #endif
 /* closes test file for read or write */
 bool_t
@@ -294,8 +295,24 @@ main (int argc, char *argv[])
 
   rc &= test_xdrstdio_int (&o);
   rc &= test_xdrstdio_u_int (&o);
-  rc &= test_xdrstdio_long (&o);
-  rc &= test_xdrstdio_u_long (&o);
+
+#ifdef _MSC_VER
+# pragma warning(push)
+# pragma warning(disable:4127)
+#endif
+  if (sizeof(long) <= BYTES_PER_XDR_UNIT) 
+    { 
+      rc &= test_xdrstdio_long (&o);
+      rc &= test_xdrstdio_u_long (&o);
+    }
+  else
+    log_msg (o.log, XDR_LOG_NORMAL,
+             "Skipping xdr_long and xdr_u_long tests. These are broken on "
+             "64 bit platforms.\n");
+#ifdef _MSC_VER
+# pragma warning(pop)
+#endif
+
   rc &= test_xdrstdio_short (&o);
   rc &= test_xdrstdio_u_short (&o);
   rc &= test_xdrstdio_char (&o);

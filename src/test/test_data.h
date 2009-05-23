@@ -36,8 +36,8 @@ extern const struct xdr_discrim test_union_dscrim[6];
 
 /* struct definitions and helper functions for xdr_reference */
 typedef struct gnumbers_ {
-  long g_assets;
-  long g_liabilities;
+  int32_t g_assets;
+  int32_t g_liabilities;
 } gnumbers_t;
 extern bool_t xdr_gnumbers_t (XDR *, gnumbers_t *);
 typedef struct pgn_ {

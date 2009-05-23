@@ -364,8 +364,8 @@ const char * STRING_DATA = "This is a test string. It is fairly short.";
 bool_t
 xdr_gnumbers_t (XDR *xdrs, gnumbers_t *gp)
 {
-  return (xdr_long (xdrs, &gp->g_assets) &&
-          xdr_long (xdrs, &gp->g_liabilities));
+  return (xdr_int32_t (xdrs, &gp->g_assets) &&
+          xdr_int32_t (xdrs, &gp->g_liabilities));
 }
 
 #define MAX_NAME_LEN 128
@@ -654,8 +654,8 @@ init_pgn_contents (pgn_t *data, int cnt)
   data->name = (char *) malloc (strlen (NAMES_DATA[cnt]) + 1);
   strcpy (data->name, NAMES_DATA[cnt]);
   data->gnp = (gnumbers_t *) malloc (sizeof(gnumbers_t));
-  data->gnp->g_assets = LONG_DATA[cnt];
-  data->gnp->g_liabilities = LONG_DATA[TEST_DATA_SZ - cnt - 1];
+  data->gnp->g_assets = INT32_DATA[cnt];
+  data->gnp->g_liabilities = INT32_DATA[TEST_DATA_SZ - cnt - 1];
 }
 
 void
@@ -718,7 +718,7 @@ print_pgn (FILE * f, pgn_t *pgn)
     fputs ("gnp: <NULL>",f);
   else
     {
-      fprintf (f, "gnp->g_assets=%ld\tgnp->g_liabilities=%ld",
+      fprintf (f, "gnp->g_assets=%" PRId32 "\tgnp->g_liabilities=%" PRId32,
                pgn->gnp->g_assets, pgn->gnp->g_liabilities);
     }
 }

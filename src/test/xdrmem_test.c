@@ -88,6 +88,7 @@ xdrmem_create_cb (XDR * xdrs, enum xdr_op op, void * data)
 #ifdef _MSC_VER
 # pragma warning(push)
 # pragma warning(disable:4100)
+# pragma warning(disable:4127)
 #endif
 bool_t
 xdrmem_finish_cb (XDR * xdrs, enum xdr_op op, void * data)
@@ -155,8 +156,24 @@ main (int argc, char *argv[])
 
   rc &= test_xdrmem_int (&o);
   rc &= test_xdrmem_u_int (&o);
-  rc &= test_xdrmem_long (&o);
-  rc &= test_xdrmem_u_long (&o);
+
+#ifdef _MSC_VER
+# pragma warning(push)
+# pragma warning(disable:4127)
+#endif
+  if (sizeof(long) <= BYTES_PER_XDR_UNIT)
+    {
+      rc &= test_xdrmem_long (&o);
+      rc &= test_xdrmem_u_long (&o);
+    }
+  else
+    log_msg (o.log, XDR_LOG_NORMAL,
+             "Skipping xdr_long and xdr_u_long tests. These are broken on "
+             "64 bit platforms.\n");
+#ifdef _MSC_VER
+# pragma warning(pop)
+#endif
+
   rc &= test_xdrmem_short (&o);
   rc &= test_xdrmem_u_short (&o);
   rc &= test_xdrmem_char (&o);
@@ -898,8 +915,8 @@ test_xdrmem_list (opts * o)
   memset (buf, 0, buf_sz);
 
   rv = test_core_xdr_list (o->log, testid,
-    &xdrmem_stream_ops, "xdr_pgn_list_t_RECURSIVE",
-    xdr_pgn_list_t_RECURSIVE, (void *)&xdr_data);
+    &xdrmem_stream_ops, "xdr_pgn_list_t",
+    xdr_pgn_list_t, (void *)&xdr_data);
   return rv;
 }
 

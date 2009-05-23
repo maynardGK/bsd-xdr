@@ -179,7 +179,7 @@ test_core_xdr_union (log_opts * log,
 
   if (check_for_overflow)
     {
-      if (xdr_union (&xdr_enc, (enum_t *)&(data[0].type), 
+      if (xdr_union (&xdr_enc, (enum_t *)&(data[0].type),
                      (char *)&(data[0].value), test_union_dscrim, NULL_xdrproc_t))
         {
           log_msg (log, XDR_LOG_INFO,
@@ -233,7 +233,7 @@ test_core_xdr_union_end1:
   else
     log_msg (log, XDR_LOG_NORMAL, "%s: FAIL\n", testid);
 
-  return pass;                                                 
+  return pass;
 }
 
 bool_t
@@ -268,7 +268,7 @@ test_core_xdr_opaque (log_opts * log,
       log_msg (log, XDR_LOG_INFO,
                "%s(xdr_opaque): failed XDR_ENCODE\n",
                testid);
-      pass = FALSE; 
+      pass = FALSE;
       goto test_core_xdr_opaque_end2;
     }
   (*(stream_ops->finish_cb))(&xdr_enc, XDR_ENCODE, xdr_data);
@@ -286,7 +286,7 @@ test_core_xdr_opaque (log_opts * log,
       log_msg (log, XDR_LOG_INFO,
                "%s(xdr_opaque): failed XDR_DECODE\n",
                testid);
-      pass = FALSE; 
+      pass = FALSE;
       goto test_core_xdr_opaque_end3;
     }
   (*(stream_ops->finish_cb))(&xdr_dec, XDR_DECODE, xdr_data);
@@ -317,7 +317,7 @@ test_core_xdr_opaque_end1:
   else
     log_msg (log, XDR_LOG_NORMAL, "%s: FAIL\n", testid);
 
-  return pass;                                                 
+  return pass;
 }
 
 bool_t
@@ -357,7 +357,7 @@ test_core_xdr_bytes (log_opts * log,
       log_msg (log, XDR_LOG_INFO,
                "%s(xdr_bytes): failed XDR_ENCODE\n",
                testid);
-      pass = FALSE; 
+      pass = FALSE;
       goto test_core_xdr_bytes_end2;
     }
   (*(stream_ops->finish_cb))(&xdr_enc, XDR_ENCODE, xdr_data);
@@ -377,7 +377,7 @@ test_core_xdr_bytes (log_opts * log,
       log_msg (log, XDR_LOG_INFO,
                "%s(xdr_bytes): failed XDR_DECODE w/o allocation\n",
                testid);
-      pass = FALSE; 
+      pass = FALSE;
       goto test_core_xdr_bytes_end3;
     }
   (*(stream_ops->finish_cb))(&xdr_dec, XDR_DECODE, xdr_data);
@@ -415,7 +415,7 @@ test_core_xdr_bytes (log_opts * log,
       log_msg (log, XDR_LOG_INFO,
                "%s(xdr_bytes): failed XDR_DECODE with allocation\n",
                testid);
-      pass = FALSE; 
+      pass = FALSE;
       goto test_core_xdr_bytes_end3;
     }
   (*(stream_ops->finish_cb))(&xdr_dec, XDR_DECODE, xdr_data);
@@ -464,7 +464,7 @@ test_core_xdr_bytes_end1:
   else
     log_msg (log, XDR_LOG_NORMAL, "%s: FAIL\n", testid);
 
-  return pass;                                                 
+  return pass;
 }
 
 bool_t
@@ -499,7 +499,7 @@ test_core_xdr_string (log_opts * log,
       log_msg (log, XDR_LOG_INFO,
                "%s(xdr_string): failed XDR_ENCODE\n",
                testid);
-      pass = FALSE; 
+      pass = FALSE;
       goto test_core_xdr_string_end2;
     }
   (*(stream_ops->finish_cb))(&xdr_enc, XDR_ENCODE, xdr_data);
@@ -518,7 +518,7 @@ test_core_xdr_string (log_opts * log,
       log_msg (log, XDR_LOG_INFO,
                "%s(xdr_string): failed XDR_DECODE w/o allocation\n",
                testid);
-      pass = FALSE; 
+      pass = FALSE;
       goto test_core_xdr_string_end3;
     }
   (*(stream_ops->finish_cb))(&xdr_dec, XDR_DECODE, xdr_data);
@@ -541,7 +541,7 @@ test_core_xdr_string (log_opts * log,
       log_msg (log, XDR_LOG_INFO,
                "%s(xdr_string): failed XDR_DECODE with allocation\n",
                testid);
-      pass = FALSE; 
+      pass = FALSE;
       goto test_core_xdr_string_end3;
     }
   (*(stream_ops->finish_cb))(&xdr_dec, XDR_DECODE, xdr_data);
@@ -574,7 +574,7 @@ test_core_xdr_string_end1:
   else
     log_msg (log, XDR_LOG_NORMAL, "%s: FAIL\n", testid);
 
-  return pass;                                                 
+  return pass;
 }
 
 bool_t
@@ -609,7 +609,7 @@ test_core_xdr_wrapstring (log_opts * log,
       log_msg (log, XDR_LOG_INFO,
                "%s(xdr_wrapstring): failed XDR_ENCODE\n",
                testid);
-      pass = FALSE; 
+      pass = FALSE;
       goto test_core_xdr_wrapstring_end2;
     }
   (*(stream_ops->finish_cb))(&xdr_enc, XDR_ENCODE, xdr_data);
@@ -628,7 +628,7 @@ test_core_xdr_wrapstring (log_opts * log,
       log_msg (log, XDR_LOG_INFO,
                "%s(xdr_wrapstring): failed XDR_DECODE w/o allocation\n",
                testid);
-      pass = FALSE; 
+      pass = FALSE;
       goto test_core_xdr_wrapstring_end3;
     }
   (*(stream_ops->finish_cb))(&xdr_dec, XDR_DECODE, xdr_data);
@@ -651,7 +651,7 @@ test_core_xdr_wrapstring (log_opts * log,
       log_msg (log, XDR_LOG_INFO,
                "%s(xdr_wrapstring): failed XDR_DECODE with allocation\n",
                testid);
-      pass = FALSE; 
+      pass = FALSE;
       goto test_core_xdr_wrapstring_end3;
     }
   (*(stream_ops->finish_cb))(&xdr_dec, XDR_DECODE, xdr_data);
@@ -684,7 +684,7 @@ test_core_xdr_wrapstring_end1:
   else
     log_msg (log, XDR_LOG_NORMAL, "%s: FAIL\n", testid);
 
-  return pass;                                                 
+  return pass;
 }
 
 bool_t
@@ -721,13 +721,13 @@ test_core_xdr_array (log_opts * log,
     }
 
   (*(stream_ops->create_cb))(&xdr_enc, XDR_ENCODE, xdr_data);
-  if (!xdr_array (&xdr_enc, (char **)&data, &data_cnt, TEST_DATA_SZ + 7, 
+  if (!xdr_array (&xdr_enc, (char **)(void *)(&data), &data_cnt, TEST_DATA_SZ + 7,
                   sizeof(int16_t), (xdrproc_t)xdr_int16_t))
     {
       log_msg (log, XDR_LOG_INFO,
                "%s(xdr_array): failed XDR_ENCODE\n",
                testid);
-      pass = FALSE; 
+      pass = FALSE;
       goto test_core_xdr_array_end2;
     }
   (*(stream_ops->finish_cb))(&xdr_enc, XDR_ENCODE, xdr_data);
@@ -737,13 +737,13 @@ test_core_xdr_array (log_opts * log,
 
   /* decode into allocated buffer */
   (*(stream_ops->create_cb))(&xdr_dec, XDR_DECODE, xdr_data);
-  if (!xdr_array (&xdr_dec, (char **)&p, &p_cnt, TEST_DATA_SZ + 7,
+  if (!xdr_array (&xdr_dec, (char **)(void *)&p, &p_cnt, TEST_DATA_SZ + 7,
       sizeof(int16_t), (xdrproc_t)xdr_int16_t))
     {
       log_msg (log, XDR_LOG_INFO,
                "%s(xdr_array): failed XDR_DECODE\n",
                testid);
-      pass = FALSE; 
+      pass = FALSE;
       goto test_core_xdr_array_end3;
     }
   (*(stream_ops->finish_cb))(&xdr_dec, XDR_DECODE, xdr_data);
@@ -756,7 +756,7 @@ test_core_xdr_array (log_opts * log,
                testid, data_cnt, p_cnt);
       pass = FALSE;
       goto test_core_xdr_array_end3;
-    } 
+    }
 
   for (cnt = 0; cnt < data_cnt; cnt++)
     {
@@ -772,14 +772,14 @@ test_core_xdr_array (log_opts * log,
     }
 
   /* Free allocated buffer; not very efficient in this
-   * case, because we deserialize each element from the 
+   * case, because we deserialize each element from the
    * buffer AGAIN, before freeing the entire array.
    * This makes more sense to do when you have structures
    * that contain pointers. But, here we just verify that
    * it works.
    */
   (*(stream_ops->create_cb))(&xdr_destroy, XDR_FREE, xdr_data);
-  if (!xdr_array (&xdr_destroy, (char **)&p, &p_cnt, TEST_DATA_SZ + 7,
+  if (!xdr_array (&xdr_destroy, (char **)(void *)&p, &p_cnt, TEST_DATA_SZ + 7,
                   sizeof(int16_t), (xdrproc_t)xdr_int16_t))
     {
       log_msg (log, XDR_LOG_INFO,
@@ -814,7 +814,7 @@ test_core_xdr_array_end1:
   else
     log_msg (log, XDR_LOG_NORMAL, "%s: FAIL\n", testid);
 
-  return pass;                                                 
+  return pass;
 }
 
 bool_t
@@ -853,7 +853,7 @@ test_core_xdr_vector (log_opts * log,
       log_msg (log, XDR_LOG_INFO,
                "%s(xdr_vector): failed XDR_ENCODE\n",
                testid);
-      pass = FALSE; 
+      pass = FALSE;
       goto test_core_xdr_vector_end2;
     }
   (*(stream_ops->finish_cb))(&xdr_enc, XDR_ENCODE, xdr_data);
@@ -873,7 +873,7 @@ test_core_xdr_vector (log_opts * log,
       log_msg (log, XDR_LOG_INFO,
                "%s(xdr_vector): failed XDR_DECODE\n",
                testid);
-      pass = FALSE; 
+      pass = FALSE;
       goto test_core_xdr_vector_end3;
     }
   (*(stream_ops->finish_cb))(&xdr_dec, XDR_DECODE, xdr_data);
@@ -905,7 +905,7 @@ test_core_xdr_vector_end1:
   else
     log_msg (log, XDR_LOG_NORMAL, "%s: FAIL\n", testid);
 
-  return pass;                                                 
+  return pass;
 }
 
 bool_t
@@ -942,7 +942,7 @@ test_core_xdr_reference (log_opts * log,
       log_msg (log, XDR_LOG_INFO,
                "%s(xdr_pgn_t): failed XDR_ENCODE\n",
                testid);
-      pass = FALSE; 
+      pass = FALSE;
       goto test_core_xdr_reference_end2;
     }
   (*(stream_ops->finish_cb))(&xdr_enc, XDR_ENCODE, xdr_data);
@@ -957,7 +957,7 @@ test_core_xdr_reference (log_opts * log,
       log_msg (log, XDR_LOG_INFO,
                "%s(xdr_pgn_t): failed XDR_DECODE\n",
                testid);
-      pass = FALSE; 
+      pass = FALSE;
       goto test_core_xdr_reference_end3;
     }
   (*(stream_ops->finish_cb))(&xdr_dec, XDR_DECODE, xdr_data);
@@ -997,7 +997,7 @@ test_core_xdr_reference_end1:
   else
     log_msg (log, XDR_LOG_NORMAL, "%s: FAIL\n", testid);
 
-  return pass;                                                 
+  return pass;
 }
 
 bool_t
@@ -1010,7 +1010,7 @@ test_core_xdr_list (log_opts * log,
 {
   /*
    * Same test, called with xdr_pgn_list_t_RECURSIVE() and
-   * xdr_pgn_list_t(). The former is relatively inefficient, 
+   * xdr_pgn_list_t(). The former is relatively inefficient,
    * but explicitly exercises the xdr_pointer primitive.
    * The latter is the "correct" way to serialize a list.
    */
@@ -1052,11 +1052,11 @@ test_core_xdr_list (log_opts * log,
       log_msg (log, XDR_LOG_INFO,
                "%s(%s): failed XDR_ENCODE\n",
                testid, proc_name);
-      pass = FALSE; 
+      pass = FALSE;
       goto test_core_xdr_list_end2;
     }
   pos = XDR_GETPOS (&xdr_enc);
-  log_msg (log, XDR_LOG_INFO, "%s(%s): used %u bytes\n", 
+  log_msg (log, XDR_LOG_INFO, "%s(%s): used %u bytes\n",
            testid, proc_name, pos);
   (*(stream_ops->finish_cb))(&xdr_enc, XDR_ENCODE, xdr_data);
 
@@ -1070,7 +1070,7 @@ test_core_xdr_list (log_opts * log,
       log_msg (log, XDR_LOG_INFO,
                "%s(xdr_pgn_t): failed XDR_DECODE\n",
                testid);
-      pass = FALSE; 
+      pass = FALSE;
       goto test_core_xdr_list_end3;
     }
   pos = XDR_GETPOS (&xdr_dec);
@@ -1167,7 +1167,7 @@ test_core_xdr_list_end1:
   else
     log_msg (log, XDR_LOG_NORMAL, "%s: FAIL\n", testid);
 
-  return pass;                                                 
+  return pass;
 }
 
 bool_t
@@ -1209,7 +1209,7 @@ test_core_xdr_primitive_struct (log_opts * log,
       log_msg (log, XDR_LOG_INFO,
                "%s(xdr_primitive_struct_t): failed XDR_ENCODE\n",
                testid);
-      pass = FALSE; 
+      pass = FALSE;
       goto test_core_xdr_primitive_struct_end2;
     }
   pos = XDR_GETPOS (&xdr_enc);
@@ -1228,7 +1228,7 @@ test_core_xdr_primitive_struct (log_opts * log,
       log_msg (log, XDR_LOG_INFO,
                "%s(xdr_primitive_struct_t): failed XDR_DECODE\n",
                testid);
-      pass = FALSE; 
+      pass = FALSE;
       goto test_core_xdr_primitive_struct_end3;
     }
   pos = XDR_GETPOS (&xdr_dec);
@@ -1274,6 +1274,6 @@ test_core_xdr_primitive_struct_end1:
   else
     log_msg (log, XDR_LOG_NORMAL, "%s: FAIL\n", testid);
 
-  return pass;                                                 
+  return pass;
 }
 

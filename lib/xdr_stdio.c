@@ -51,6 +51,8 @@ static bool_t xdrstdio_putbytes (XDR *, const char *, u_int);
 static u_int xdrstdio_getpos (XDR *);
 static bool_t xdrstdio_setpos (XDR *, u_int);
 static int32_t *xdrstdio_inline (XDR *, u_int);
+static bool_t xdrstdio_getint32 (XDR*, int32_t *);
+static bool_t xdrstdio_putint32 (XDR*, const int32_t *);
 
 /*
  * Ops vector for stdio type XDR
@@ -63,7 +65,9 @@ static const struct xdr_ops xdrstdio_ops = {
   xdrstdio_getpos,              /* get offset in the stream */
   xdrstdio_setpos,              /* set offset in the stream */
   xdrstdio_inline,              /* prime stream for inline macros */
-  xdrstdio_destroy              /* destroy stream */
+  xdrstdio_destroy,             /* destroy stream */
+  xdrstdio_getint32,            /* deseraialize an int */
+  xdrstdio_putint32             /* seraialize an long int */
 };
 
 /*
@@ -75,8 +79,8 @@ void
 xdrstdio_create (XDR * xdrs, FILE * file, enum xdr_op op)
 {
   xdrs->x_op = op;
-  xdrs->x_ops = &xdrstdio_ops;
-  xdrs->x_private = file;
+  xdrs->x_ops = (struct xdr_ops *) &xdrstdio_ops;
+  xdrs->x_private = (void *) file;
   xdrs->x_handy = 0;
   xdrs->x_base = 0;
 }
@@ -98,28 +102,28 @@ xdrstdio_getlong (XDR * xdrs, long *lp)
   u_int32_t temp;
 
   if (fread (&temp, sizeof (int32_t), 1, (FILE *) xdrs->x_private) != 1)
-    return (FALSE);
-  *lp = (long) ntohl (temp);
-  return (TRUE);
+    return FALSE;
+  *lp = (long) (int32_t) ntohl (temp);
+  return TRUE;
 }
 
 static bool_t
 xdrstdio_putlong (XDR * xdrs, const long *lp)
 {
-  int32_t mycopy = htonl ((u_int32_t) * lp);
+  u_int32_t temp = htonl ((u_int32_t) * lp);
 
-  if (fwrite (&mycopy, sizeof (int32_t), 1, (FILE *) xdrs->x_private) != 1)
-    return (FALSE);
-  return (TRUE);
+  if (fwrite (&temp, sizeof (int32_t), 1, (FILE *) xdrs->x_private) != 1)
+    return FALSE;
+  return TRUE;
 }
 
 static bool_t
 xdrstdio_getbytes (XDR * xdrs, char *addr, u_int len)
 {
-  if ((len != 0)
-      && (fread (addr, (size_t) len, 1, (FILE *) xdrs->x_private) != 1))
-    return (FALSE);
-  return (TRUE);
+  if ((len != 0) && (fread (addr, (size_t) len, 1,
+                            (FILE *) xdrs->x_private) != 1))
+    return FALSE;
+  return TRUE;
 }
 
 static bool_t
@@ -127,8 +131,8 @@ xdrstdio_putbytes (XDR * xdrs, const char *addr, u_int len)
 {
   if ((len != 0) && (fwrite (addr, (size_t) len, 1,
                              (FILE *) xdrs->x_private) != 1))
-    return (FALSE);
-  return (TRUE);
+    return FALSE;
+  return TRUE;
 }
 
 static u_int
@@ -161,9 +165,30 @@ xdrstdio_inline (XDR * xdrs, u_int len)
    * most of the gains to be had here and require storage
    * management on this buffer, so we don't do this.
    */
-  return (NULL);
+  return NULL;
 }
 #ifdef _MSC_VER
 # pragma warning(pop)
 #endif
+
+static bool_t
+xdrstdio_getint32 (XDR *xdrs, int32_t *ip)
+{
+  int32_t temp;
+
+  if (fread (&temp, sizeof (int32_t), 1, (FILE *) xdrs->x_private) != 1)
+    return FALSE;
+  *ip = ntohl (temp);
+  return TRUE;
+}
+
+static bool_t
+xdrstdio_putint32 (XDR *xdrs, const int32_t *ip)
+{
+  int32_t temp = htonl (*ip);
+
+  if (fwrite (&temp, sizeof (int32_t), 1, (FILE *) xdrs->x_private) != 1)
+    return FALSE;
+  return TRUE;
+}
 
