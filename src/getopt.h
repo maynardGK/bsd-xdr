@@ -1,4 +1,3 @@
-/*	$NetBSD: getopt.h,v 1.4 2000/07/07 10:43:54 ad Exp $	*/
 
 /*-
  * Copyright (c) 2000 The NetBSD Foundation, Inc.
@@ -27,12 +26,12 @@
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
+ *
+ *      $NetBSD: getopt.h,v 1.4 2000/07/07 10:43:54 ad Exp $
  */
 
 #ifndef _GETOPT_H_
 #define _GETOPT_H_
-
-#include <unistd.h>
 
 /*
  * Gnu like getopt_long() and BSD4.4 getsubopt()/optreset extensions
@@ -40,6 +39,10 @@
 #define no_argument        0
 #define required_argument  1
 #define optional_argument  2
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 struct option {
 	/* name of long option */
@@ -55,24 +58,17 @@ struct option {
 	int val;
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 int getopt_long(int, char * const *, const char *,
     const struct option *, int *);
 
-/* On some platforms, this is in libc, but not in a system header */
 extern int optreset;
-#ifdef __sgi
 extern char *optarg;
 extern int opterr;
 extern int optind;
 extern int optopt;
-#endif
 
 #ifdef __cplusplus
 };
 #endif
- 
+
 #endif /* !_GETOPT_H_ */

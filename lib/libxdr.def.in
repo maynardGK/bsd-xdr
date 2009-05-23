@@ -8,12 +8,17 @@ EXPORTS
   xdr_u_long
   xdr_int32_t
   xdr_u_int32_t
+  xdr_uint32_t
   xdr_short
   xdr_u_short
   xdr_int16_t
   xdr_u_int16_t
+  xdr_uint16_t
   xdr_char
   xdr_u_char
+  xdr_int8_t
+  xdr_u_int8_t
+  xdr_uint8_t
   xdr_bool
   xdr_enum
   xdr_opaque

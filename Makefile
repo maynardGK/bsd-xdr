@@ -1,6 +1,11 @@
-top_srcdir=$(shell pwd)
+ifeq (0,${MAKELEVEL})
+  top_srcdir:=$(shell pwd)
+  uname:=$(shell uname -s)
+  MAKE := ${MAKE} top_srcdir=$(top_srcdir) uname=$(uname)
+endif
 
-uname:=$(shell uname -s)
+top_builddir:=$(shell pwd)
+
 ifeq ($(findstring CYGWIN,$(uname)),CYGWIN)
   PLATFORM:=cygwin
 else ifeq ($(findstring MINGW,$(uname)),MINGW)
@@ -10,85 +15,132 @@ else
 endif
 
 ifeq ($(PLATFORM), cygwin)
-CC=gcc
-O=o
-EXEEXT=.exe
-DLLVER=0
-SHRNAME=cygxdr-$(DLLVER).dll
-DEFFILE=$(PLATFORM)/xdr.def
-IMPNAME=libxdr.dll.a
-LIBNAME=libxdr.a
-LIB_LDEXTRA=-Wl,--out-implib=$(PLATFORM)/$(IMPNAME) -Wl,--enable-auto-image-base
-LIBS =
+  CC=gcc
+  O=o
+  EXEEXT=.exe
+  DLLVER=0
+  SHRNAME=cygxdr-$(DLLVER).dll
+  DEFFILE=$(PLATFORM)/xdr.def
+  IMPNAME=libxdr.dll.a
+  LIBNAME=libxdr.a
+  LIB_LDEXTRA=-Wl,--out-implib=$(PLATFORM)/$(IMPNAME) -Wl,--enable-auto-image-base
+  LIB_DEPS =
+  GETOPT_SRCS =
+  GETOPT_HDRS =
 else ifeq ($(PLATFORM), mingw)
-CC=gcc
-O=o
-EXEEXT=.exe
-DLLVER=0
-SHRNAME=mgwxdr-$(DLLVER).dll
-DEFFILE=$(PLATFORM)/xdr.def
-IMPNAME=libxdr.dll.a
-LIBNAME=libxdr.a
-LIB_LDEXTRA=-Wl,--out-implib=$(PLATFORM)/$(IMPNAME) -Wl,--enable-auto-image-base
-LIBS = -lws2_32
+  CC=gcc
+  O=o
+  EXEEXT=.exe
+  DLLVER=0
+  SHRNAME=mgwxdr-$(DLLVER).dll
+  DEFFILE=$(PLATFORM)/xdr.def
+  IMPNAME=libxdr.dll.a
+  LIBNAME=libxdr.a
+  LIB_LDEXTRA=-Wl,--out-implib=$(PLATFORM)/$(IMPNAME) -Wl,--enable-auto-image-base
+  LIB_DEPS = -lws2_32
+  GETOPT_SRCS = src/getopt_long.c
+  GETOPT_HDRS = src/getopt.h
 else
-CC=gcc
-O=o
-EXEEXT=
-SOMAJOR=0
-SOMINOR=0
-SOMICRO=0
-SHRNAME=libxdr.so.$(SOMAJOR).$(SOMINOR).$(SOMICRO)
-LIBNAME=libxdr.a
-LIBS =
+  CC=gcc
+  O=o
+  EXEEXT=
+  SOMAJOR=0
+  SOMINOR=0
+  SOMICRO=0
+  SHRNAME=libxdr.so.$(SOMAJOR).$(SOMINOR).$(SOMICRO)
+  LIBNAME=libxdr.a
+  LIB_DEPS =
+  GETOPT_SRCS =
+  GETOPT_HDRS =
 endif
 
-FULLPATH_SHRLIB=$(PLATFORM)/$(SHRNAME)
-FULLPATH_STATLIB=$(PLATFORM)/$(LIBNAME)
 
-INCLUDES = -I$(top_srcdir)
+INCLUDES = -I$(top_srcdir) -I$(top_builddir)
 
-LIB_HDRS = rpc/xdr.h rpc/types.h lib/xdr_private.h
+LIB_HDRS = rpc/xdr.h rpc/types.h
+LIB_HDRS_PRIVATE = lib/xdr_private.h
 LIB_SRCS = lib/xdr.c lib/xdr_array.c lib/xdr_float.c lib/xdr_mem.c \
 	   lib/xdr_rec.c lib/xdr_reference.c lib/xdr_sizeof.c lib/xdr_stdio.c \
 	   lib/xdr_private.c
 LIB_OBJS = $(LIB_SRCS:%.c=$(PLATFORM)/%.$(O))
+XDR_LIBRARIES = $(PLATFORM)/$(SHRNAME) $(PLATFORM)/$(LIBNAME)
 
-all:
-	@if test "$(PLATFORM)" = "unknown" ; then \
-	  echo "Can't build for $(uname) using this makefile" 1>&2 ;\
-	  false ;\
-	else \
-	  echo "Building for $(PLATFORM)" ;\
-	  make recursive-all ;\
+TEST_XDR_LIBS = -lxdr $(LIB_DEPS)
+TEST_XDR_LDFLAGS  = -L$(top_builddir)/$(PLATFORM)
+TEST_HDRS = src/test/test_common.h
+
+TEST_XDRMEM_HDRS = $(TEST_HDRS) $(LIB_HDRS) $(GETOPT_HDRS)
+TEST_XDRMEM_SRCS = src/test/xdrmem_test.c src/test/test_common.c $(GETOPT_SRCS)
+TEST_XDRMEM_OBJS = $(TEST_XDRMEM_SRCS:%.c=$(PLATFORM)/%.$(O))
+TEST_XDRMEM_LIBS = $(TEST_XDR_LIBS)
+TEST_XDRMEM_LDFLAGS = $(TEST_XDR_LDFLAGS)
+
+TEST_PROGS = $(PLATFORM)/xdrmem_test$(EXEEXT)
+TEST_OBJS = $(TEST_XDRMEM_OBJS)
+
+all: 
+	@if test $(MAKELEVEL) -eq 0 ; then \
+	  if test "$(PLATFORM)" = "unknown" ; then \
+	    echo "Can't build for $(uname) using this makefile" 1>&2 ;\
+	    false ;\
+	  else \
+	    echo "Building for $(PLATFORM)" ;\
+	    $(MAKE) recursive-all ;\
+	  fi ;\
 	fi
 
-recursive-all: $(FULLPATH_SHRLIB) $(FULLPATH_STATLIB)
+recursive-all: $(XDR_LIBRARIES) $(TEST_PROGS)
 
-builddir:
-	@mkdir -p $(PLATFORM)
-	@mkdir -p $(PLATFORM)/lib
+stamp:
+	@for d in $(PLATFORM)/lib $(PLATFORM)/src/test; do\
+	  if ! test -d $$d ; then\
+	    mkdir -p $$d ;\
+	  fi;\
+	done
+	touch stamp
 
-$(DEFFILE): builddir lib/libxdr.def.in
+$(DEFFILE): lib/libxdr.def.in
 	cat lib/libxdr.def.in | sed -e "s/@@LIBNAME@@/$(SHRNAME)/" > $@
 
-$(FULLPATH_SHRLIB): builddir $(DEFFILE) $(LIB_OBJS)
-	$(CC) -shared $(LDFLAGS) -o $@ $(LIB_LDEXTRA) $(DEFFILE) $(LIB_OBJS) $(LIBS)
+$(PLATFORM)/$(SHRNAME): stamp $(DEFFILE) $(LIB_OBJS)
+	$(CC) -shared $(LDFLAGS) -o $@ $(LIB_LDEXTRA) $(DEFFILE) $(LIB_OBJS) $(LIB_DEPS)
 
-$(FULLPATH_STATLIB): builddir $(LIB_OBJS)
+$(PLATFORM)/$(LIBNAME): stamp $(LIB_OBJS)
 	$(AR) cr $@ $(LIB_OBJS)
 
-$(PLATFORM)/%.$(O) : %.c $(LIB_HDRS)
+$(PLATFORM)/xdrmem_test$(EXEEXT): $(TEST_XDRMEM_OBJS) $(XDR_LIBRARIES)
+	$(CC) $(TEST_XDRMEM_LDFLAGS) $(LDFLAGS) -o $@ $(TEST_XDRMEM_OBJS) $(TEST_XDRMEM_LIBS)
+
+$(PLATFORM)/%.$(O) : %.c
 	$(CC) $(INCLUDES) $(CPPFLAGS) $(CFLAGS) -o $@ -c $<
 
 .PHONY: clean
 clean:
-	-rm -f $(LIB_OBJS) $(DEFFILE)
+	-rm -f $(LIB_OBJS) $(DEFFILE) $(TEST_OBJS) stamp
 
 .PHONY: realclean
 realclean: clean
-	-rm -f $(FULLPATH_STATLIB) $(FULLPATH_SHRLIB) $(PLATFORM)/$(IMPNAME)
+	-rm -f $(PLATFORM)/$(SHRNAME) $(PLATFORM)/$(LIBNAME)
+	@if test -n "$(IMPNAME)" ; then \
+	  rm -f $(PLATFORM)/$(IMPNAME) ;\
+	fi
+	-rm -f $(TEST_PROGS)
+	-rmdir $(PLATFORM)/src/test
+	-rmdir $(PLATFORM)/src
 	-rmdir $(PLATFORM)/lib
 	-rmdir $(PLATFORM)
 
+# dependencies
+$(PLATFORM)/lib/xdr.$(O):           lib/xdr.c           $(LIB_HDRS) $(LIB_HDRS_PRIVATE)
+$(PLATFORM)/lib/xdr_array.$(O):     lib/xdr_array.c     $(LIB_HDRS) $(LIB_HDRS_PRIVATE)
+$(PLATFORM)/lib/xdr_float.$(O):     lib/xdr_float.c     $(LIB_HDRS) $(LIB_HDRS_PRIVATE)
+$(PLATFORM)/lib/xdr_mem.$(O):       lib/xdr_mem.c       $(LIB_HDRS) $(LIB_HDRS_PRIVATE)
+$(PLATFORM)/lib/xdr_rec.$(O):       lib/xdr_rec.c       $(LIB_HDRS) $(LIB_HDRS_PRIVATE)
+$(PLATFORM)/lib/xdr_reference.$(O): lib/xdr_reference.c $(LIB_HDRS) $(LIB_HDRS_PRIVATE)
+$(PLATFORM)/lib/xdr_sizeof.$(O):    lib/xdr_sizeof.c    $(LIB_HDRS) $(LIB_HDRS_PRIVATE)
+$(PLATFORM)/lib/xdr_stdio.$(O):     lib/xdr_stdio.c     $(LIB_HDRS) $(LIB_HDRS_PRIVATE)
+$(PLATFORM)/lib/xdr_private.$(O):   lib/xdr_private.c   $(LIB_HDRS) $(LIB_HDRS_PRIVATE)
+
+$(PLATFORM)/src/test/test_common.$(O): src/test/test_common.c $(TEST_HDRS) $(LIB_HDRS) $(GETOPT_HDRS)
+$(PLATFORM)/src/test/xdrmem_test.$(O): src/test/xdrmem_test.c $(TEST_XDRMEM_HDRS) $(GETOPT_HDRS)
 

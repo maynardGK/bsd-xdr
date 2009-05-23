@@ -1,4 +1,3 @@
-/*	$NetBSD: getopt_long.c,v 1.3 2008/04/29 05:46:09 martin Exp $	*/
 
 /*-
  * Copyright (c) 2000 The NetBSD Foundation, Inc.
@@ -27,6 +26,8 @@
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
+ *
+ *      $NetBSD: getopt_long.c,v 1.3 2008/04/29 05:46:09 martin Exp $
  */
 
 #include <assert.h>
@@ -41,20 +42,11 @@
 #define _DIAGASSERT(e)
 #endif
 
-#ifdef REPLACE_GETOPT
-#ifdef __weak_alias
-__weak_alias(getopt,_getopt)
-#endif
 int	opterr = 1;		/* if error message should be printed */
 int	optind = 1;		/* index into parent argv vector */
 int	optopt = '?';		/* character checked for validity */
 int	optreset;		/* reset getopt */
 char    *optarg;		/* argument associated with option */
-#endif
-
-#ifdef __weak_alias
-__weak_alias(getopt_long,_getopt_long)
-#endif
 
 
 #define IGNORE_FIRST	(*options == '-' || *options == '+')
@@ -123,7 +115,7 @@ gcd(a, b)
 		b = c;
 		c = a % b;
 	}
-	   
+
 	return b;
 }
 
@@ -133,11 +125,7 @@ gcd(a, b)
  * in each block).
  */
 static void
-permute_args(nonopt_start, nonopt_end, opt_end, nargv)
-	int nonopt_start;
-	int nonopt_end;
-	int opt_end;
-	char * const *nargv;
+permute_args(int nonopt_start, int nonopt_end, int opt_end, char * const *nargv)
 {
 	int cstart, cyclelen, i, j, ncycle, nnonopts, nopts, pos;
 	char *swap;
@@ -173,10 +161,7 @@ permute_args(nonopt_start, nonopt_end, opt_end, nargv)
  *  Returns -2 if -- is found (can be long option or end of options marker).
  */
 static int
-getopt_internal(nargc, nargv, options)
-	int nargc;
-	char * const *nargv;
-	const char *options;
+getopt_internal(int nargc, char * const *nargv, const char *options)
 {
 	char *oli;				/* option letter list index */
 	int optchar;
@@ -267,7 +252,7 @@ start:
 	}
 	if (optchar == 'W' && oli[1] == ';') {		/* -W long-option */
 		/* XXX: what if no long options provided (called by getopt)? */
-		if (*place) 
+		if (*place)
 			return -2;
 
 		if (++optind >= nargc) {	/* no arg */
@@ -311,7 +296,6 @@ start:
 	return optchar;
 }
 
-#ifdef REPLACE_GETOPT
 /*
  * getopt --
  *	Parse argc/argv argument vector.
@@ -319,10 +303,7 @@ start:
  * [eventually this will replace the real getopt]
  */
 int
-getopt(nargc, nargv, options)
-	int nargc;
-	char * const *nargv;
-	const char *options;
+getopt(int nargc, char * const *nargv, const char *options)
 {
 	int retval;
 
@@ -344,19 +325,17 @@ getopt(nargc, nargv, options)
 	}
 	return retval;
 }
-#endif
 
 /*
  * getopt_long --
  *	Parse argc/argv argument vector.
  */
 int
-getopt_long(nargc, nargv, options, long_options, idx)
-	int nargc;
-	char * const *nargv;
-	const char *options;
-	const struct option *long_options;
-	int *idx;
+getopt_long(int nargc,
+            char * const *nargv,
+            const char *options,
+            const struct option *long_options,
+            int *idx)
 {
 	int retval;
 
@@ -397,7 +376,7 @@ getopt_long(nargc, nargv, options, long_options, idx)
 			has_equal++;
 		} else
 			current_argv_len = strlen(current_argv);
-	    
+
 		for (i = 0; long_options[i].name; i++) {
 			/* find matching long option */
 			if (strncmp(current_argv, long_options[i].name,
@@ -480,7 +459,7 @@ getopt_long(nargc, nargv, options, long_options, idx)
 		if (long_options[match].flag) {
 			*long_options[match].flag = long_options[match].val;
 			retval = 0;
-		} else 
+		} else
 			retval = long_options[match].val;
 		if (idx)
 			*idx = match;
