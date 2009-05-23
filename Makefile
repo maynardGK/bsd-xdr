@@ -32,7 +32,9 @@ ifeq ($(PLATFORM), cygwin)
   GETOPT_SRCS =
   GETOPT_HDRS =
   MKDTEMP_SRCS =
-  CFLAGS+=-Wall -Werror
+  # Some early versions of cygwin-1.7 included a broken
+  # inttypes.h, which caused warnings. May need -Wno-format.
+  CFLAGS+=-Wall -Werror # -Wno-format
 else
   ifeq ($(PLATFORM), mingw)
   CC=gcc
