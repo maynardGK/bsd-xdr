@@ -6,6 +6,7 @@
 #include <string.h>
 #include <math.h>
 #include <float.h>
+#include <errno.h>
 
 #include <rpc/types.h>
 #include <rpc/xdr.h>
@@ -38,6 +39,55 @@ base_name (const char *name)
     if (IS_DIR_SEPARATOR (*name))
       base = name + 1;
   return base;
+}
+
+int
+mkdir_p (const char *path, int mode)
+{
+  int len;
+  char *new_path;
+  int ret = 0;
+
+  new_path = (char *) malloc (strlen(path) + 1);
+  strcpy (new_path, path);
+  
+  while ((len = strlen (new_path)) && IS_DIR_SEPARATOR(new_path[len-1]))
+    new_path[len-1] = 0;
+
+#if defined(_MSC_VER) || defined(__MINGW32__)
+  while (!_mkdir (new_path))
+#else
+  while (!mkdir (new_path, mode))
+#endif
+    {
+      char *slash;
+      int last_error = errno;
+      if (last_error == EEXIST)
+        break;
+      if (last_error != ENOENT)
+        {
+          ret = -1;
+          break;
+        }
+      slash = new_path + strlen (new_path);
+      while (slash > new_path && !IS_DIR_SEPARATOR(*slash))
+        slash--;
+      if (slash == new_path)
+        {
+          ret = -1;
+          break;
+        }
+      len = slash - new_path;
+      new_path[len] = 0;
+      if (!mkdir_p (new_path, mode))
+        {
+          ret = -1;
+          break;
+        }
+      new_path[len] = '/';
+    }
+    free (new_path);
+    return ret;
 }
 
 static void
@@ -958,6 +1008,160 @@ print_pgn_list (FILE * f, pgn_list_t *pgn_list)
     }
 }
 
+bool_t
+xdr_primitive_struct_t (XDR *xdrs, test_struct_of_primitives_t *ps)
+{
+  return (
+      xdr_int            (xdrs, &(ps->a)) &&
+      xdr_u_int          (xdrs, &(ps->b)) &&
+      xdr_long           (xdrs, &(ps->c)) &&
+      xdr_u_long         (xdrs, &(ps->d)) &&
+      xdr_short          (xdrs, &(ps->e)) &&
+      xdr_u_short        (xdrs, &(ps->f)) &&
+      xdr_char           (xdrs, &(ps->g)) &&
+      xdr_u_char         (xdrs, &(ps->h)) &&
+      xdr_int8_t         (xdrs, &(ps->i)) &&
+      xdr_u_int8_t       (xdrs, &(ps->j)) &&
+      xdr_uint8_t        (xdrs, &(ps->k)) &&
+      xdr_int16_t        (xdrs, &(ps->l)) &&
+      xdr_u_int16_t      (xdrs, &(ps->m)) &&
+      xdr_uint16_t       (xdrs, &(ps->n)) &&
+      xdr_int32_t        (xdrs, &(ps->o)) &&
+      xdr_u_int32_t      (xdrs, &(ps->p)) &&
+      xdr_uint32_t       (xdrs, &(ps->q)) &&
+      xdr_int64_t        (xdrs, &(ps->r)) &&
+      xdr_u_int64_t      (xdrs, &(ps->s)) &&
+      xdr_uint64_t       (xdrs, &(ps->t)) &&
+      xdr_hyper          (xdrs, &(ps->X_hyper))   &&
+      xdr_u_hyper        (xdrs, &(ps->X_u_hyper)) &&
+      xdr_longlong_t     (xdrs, &(ps->X_ll))      &&
+      xdr_u_longlong_t   (xdrs, &(ps->X_ull))     &&
+      xdr_float          (xdrs, &(ps->u)) &&
+      xdr_double         (xdrs, &(ps->v)) &&
+      xdr_bool           (xdrs, &(ps->w)) &&
+      xdr_enum           (xdrs, &(ps->x)));
+}
+
+void
+init_primitive_struct (test_struct_of_primitives_t *ps)
+{
+  ps->a =    INT_DATA [ 4]; 
+  ps->b =   UINT_DATA [ 5]; 
+  ps->c =   LONG_DATA [ 6]; 
+  ps->d =  ULONG_DATA [ 7]; 
+  ps->e =  SHORT_DATA [ 8]; 
+  ps->f = USHORT_DATA [ 9];
+#if CHAR_MIN < 0
+  ps->g =  SCHAR_DATA [10]; 
+#else
+  ps->g =  UCHAR_DATA [10]; 
+#endif
+  ps->h =  UCHAR_DATA [11]; 
+  ps->i =   INT8_DATA [12]; 
+  ps->j =  UINT8_DATA [13]; 
+  ps->k =  UINT8_DATA [14]; 
+  ps->l =  INT16_DATA [15]; 
+  ps->m = UINT16_DATA [16]; 
+  ps->n = UINT16_DATA [17]; 
+  ps->o =  INT32_DATA [18]; 
+  ps->p = UINT32_DATA [19]; 
+  ps->q = UINT32_DATA [ 4]; 
+  ps->r =  INT64_DATA [ 5]; 
+  ps->s = UINT64_DATA [ 6]; 
+  ps->t = UINT64_DATA [ 7]; 
+  ps->X_hyper   =      HYPER_DATA [ 8];
+  ps->X_u_hyper =     UHYPER_DATA [ 9];
+  ps->X_ll      =   LONGLONG_DATA [10];
+  ps->X_ull     =  ULONGLONG_DATA [11];
+  ps->u = FLOAT_DATA  [12]; 
+  ps->v = DOUBLE_DATA [13]; 
+  ps->w = BOOL_DATA   [14]; 
+  ps->x = ENUM_DATA   [15]; 
+}
+
+int
+compare_primitive_structs (test_struct_of_primitives_t *lhs,
+                           test_struct_of_primitives_t *rhs)
+{
+  static int v[28];
+  int rVal = 0;
+  int i;
+  v[ 0] = ((lhs->a == rhs->a) ? 0 : ((lhs->a < rhs->a) ? -1 : 1));
+  v[ 1] = ((lhs->b == rhs->b) ? 0 : ((lhs->b < rhs->b) ? -1 : 1));
+  v[ 2] = ((lhs->c == rhs->c) ? 0 : ((lhs->c < rhs->c) ? -1 : 1));
+  v[ 3] = ((lhs->d == rhs->d) ? 0 : ((lhs->d < rhs->d) ? -1 : 1));
+  v[ 4] = ((lhs->e == rhs->e) ? 0 : ((lhs->e < rhs->e) ? -1 : 1));
+  v[ 5] = ((lhs->f == rhs->f) ? 0 : ((lhs->f < rhs->f) ? -1 : 1));
+  v[ 6] = ((lhs->g == rhs->g) ? 0 : ((lhs->g < rhs->g) ? -1 : 1));
+  v[ 7] = ((lhs->h == rhs->h) ? 0 : ((lhs->h < rhs->h) ? -1 : 1));
+  v[ 8] = ((lhs->i == rhs->i) ? 0 : ((lhs->i < rhs->i) ? -1 : 1));
+  v[ 9] = ((lhs->j == rhs->j) ? 0 : ((lhs->j < rhs->j) ? -1 : 1));
+  v[10] = ((lhs->k == rhs->k) ? 0 : ((lhs->k < rhs->k) ? -1 : 1));
+  v[11] = ((lhs->l == rhs->l) ? 0 : ((lhs->l < rhs->l) ? -1 : 1));
+  v[12] = ((lhs->m == rhs->m) ? 0 : ((lhs->m < rhs->m) ? -1 : 1));
+  v[13] = ((lhs->n == rhs->n) ? 0 : ((lhs->n < rhs->n) ? -1 : 1));
+  v[14] = ((lhs->o == rhs->o) ? 0 : ((lhs->o < rhs->o) ? -1 : 1));
+  v[15] = ((lhs->p == rhs->p) ? 0 : ((lhs->p < rhs->p) ? -1 : 1));
+  v[16] = ((lhs->q == rhs->q) ? 0 : ((lhs->q < rhs->q) ? -1 : 1));
+  v[17] = ((lhs->r == rhs->r) ? 0 : ((lhs->r < rhs->r) ? -1 : 1));
+  v[18] = ((lhs->s == rhs->s) ? 0 : ((lhs->s < rhs->s) ? -1 : 1));
+  v[19] = ((lhs->t == rhs->t) ? 0 : ((lhs->t < rhs->t) ? -1 : 1));
+  v[20] = ((lhs->X_hyper   == rhs->X_hyper)   ? 0 : ((lhs->X_hyper   < rhs->X_hyper)   ? -1 : 1));
+  v[21] = ((lhs->X_u_hyper == rhs->X_u_hyper) ? 0 : ((lhs->X_u_hyper < rhs->X_u_hyper) ? -1 : 1));
+  v[22] = ((lhs->X_ll      == rhs->X_ll)      ? 0 : ((lhs->X_ll      < rhs->X_ll)      ? -1 : 1));
+  v[23] = ((lhs->X_ull     == rhs->X_ull)     ? 0 : ((lhs->X_ull     < rhs->X_ull)     ? -1 : 1));
+  v[24] = ((lhs->u == rhs->u) ? 0 : ((lhs->u < rhs->u) ? -1 : 1));
+  v[25] = ((lhs->v == rhs->v) ? 0 : ((lhs->v < rhs->v) ? -1 : 1));
+  v[26] = ((lhs->w == rhs->w) ? 0 : ((lhs->w < rhs->w) ? -1 : 1));
+  v[27] = ((lhs->x == rhs->x) ? 0 : ((lhs->x < rhs->x) ? -1 : 1));
+
+  for (i = 0; i < 28; i++)
+    if (v[i] != 0)
+      {
+        rVal = v[i];
+        break;
+      }
+  return rVal;
+}
+
+void
+print_primitive_struct (FILE *f, test_struct_of_primitives_t *ps)
+{
+  if (!ps) { fputs ("<NULL>",f); return; }
+  fprintf (f, "int:            %d\n",          ps->a);
+  fprintf (f, "u_int:          %u\n",          ps->b);
+  fprintf (f, "long:           %ld\n",         ps->c);
+  fprintf (f, "u_long:         %lu\n",         ps->d);
+  fprintf (f, "short:          %hd\n",         ps->e);
+  fprintf (f, "u_short:        %hu\n",         ps->f);
+#if CHAR_MIN < 0
+  fprintf (f, "char:           %hhd\n",        ps->g);
+#else
+  fprintf (f, "char:           %hhu\n",        ps->g);
+#endif
+  fprintf (f, "u_char:         %hhu\n",        ps->h);
+  fprintf (f, "int8_t:         %" PRId8 "\n",  ps->i);
+  fprintf (f, "u_int8_t:       %" PRIu8 "\n",  ps->j);
+  fprintf (f, "uint8_t:        %" PRIu8 "\n",  ps->k);
+  fprintf (f, "int16_t:        %" PRId16 "\n", ps->l);
+  fprintf (f, "u_int16_t:      %" PRIu16 "\n", ps->m);
+  fprintf (f, "uint16_t:       %" PRIu16 "\n", ps->n);
+  fprintf (f, "int32_t:        %" PRId32 "\n", ps->o);
+  fprintf (f, "u_int32_t:      %" PRIu32 "\n", ps->p);
+  fprintf (f, "uint32_t:       %" PRIu32 "\n", ps->q);
+  fprintf (f, "int64_t:        %" PRId64 "\n", ps->r);
+  fprintf (f, "u_int64_t:      %" PRIu64 "\n", ps->s);
+  fprintf (f, "uint64_t:       %" PRIu64 "\n", ps->t);
+  fprintf (f, "hyper:          %" PRId64 "\n", ps->X_hyper);
+  fprintf (f, "u_hyper:        %" PRIu64 "\n", ps->X_u_hyper);
+  fprintf (f, "longlong_t:     %" PRId64 "\n", ps->X_ll);
+  fprintf (f, "u_longlong_t:   %" PRIu64 "\n", ps->X_ull);
+  fprintf (f, "float:          %.8e\n",        ps->u);
+  fprintf (f, "double:         %.15e\n",       ps->v);
+  fprintf (f, "bool:           %d\n",          ps->w);
+  fprintf (f, "enum:           %d\n",          ps->x);
+}
+
 
 #define TEST_BASIC_TYPE_CORE_FUNCTION_DEF( FUNC, TYPE, TYPEFMT ) \
 bool_t                                         \
@@ -966,6 +1170,7 @@ test_basic_type_core_##FUNC (log_opts * log,   \
   TYPE           *input_data,                  \
   u_int           data_cnt,                    \
   xdr_stream_ops *stream_ops,                  \
+  bool_t          check_too_much,              \
   void           *xdr_data)                    \
 {                                              \
   XDR xdr_enc;                                 \
@@ -975,6 +1180,7 @@ test_basic_type_core_##FUNC (log_opts * log,   \
   bool_t pass = TRUE;                          \
                                                \
   log_msg (log, XDR_LOG_DETAIL, "%s: Entering test.\n", testid);    \
+  (*(stream_ops->init_test_cb))(XDR_ENCODE, xdr_data);              \
                                                                     \
   (*(stream_ops->create_cb))(&xdr_enc, XDR_ENCODE, xdr_data);       \
   for (cnt = 0; cnt < data_cnt; cnt++)                              \
@@ -992,13 +1198,16 @@ test_basic_type_core_##FUNC (log_opts * log,   \
         }                                                           \
     }                                                               \
 \
-  if (FUNC (&xdr_enc, (TYPE*)&input_data[0]))                       \
+  if (check_too_much)                                               \
     {                                                               \
-      log_msg (log, XDR_LOG_INFO,                                   \
-               "%s: unexpected pass " #FUNC " XDR_ENCODE\n",        \
-                testid);                                            \
-      pass = FALSE;                                                 \
-      goto test_##FUNC##_end;                                       \
+      if (FUNC (&xdr_enc, (TYPE*)&input_data[0]))                   \
+        {                                                           \
+          log_msg (log, XDR_LOG_INFO,                               \
+                   "%s: unexpected pass " #FUNC " XDR_ENCODE\n",    \
+                    testid);                                        \
+          pass = FALSE;                                             \
+          goto test_##FUNC##_end;                                   \
+        }                                                           \
     }                                                               \
   (*(stream_ops->finish_cb))(&xdr_enc, XDR_ENCODE, xdr_data);       \
 \
@@ -1036,6 +1245,7 @@ test_##FUNC##_end2:                                                 \
   (*(stream_ops->finish_cb))(&xdr_dec, XDR_DECODE, xdr_data);       \
 test_##FUNC##_end:                                                  \
   (*(stream_ops->finish_cb))(&xdr_enc, XDR_ENCODE, xdr_data);       \
+  (*(stream_ops->fini_test_cb))(xdr_data);                          \
   if (pass == TRUE)                                                 \
     log_msg (log, XDR_LOG_NORMAL, "%s: PASS\n", testid);            \
   else                                                              \
@@ -1050,7 +1260,11 @@ TEST_BASIC_TYPE_CORE_FUNCTION_DEF (xdr_long, long, "ld")
 TEST_BASIC_TYPE_CORE_FUNCTION_DEF (xdr_u_long, unsigned long, "lu")
 TEST_BASIC_TYPE_CORE_FUNCTION_DEF (xdr_short, short, "hd")
 TEST_BASIC_TYPE_CORE_FUNCTION_DEF (xdr_u_short, unsigned short, "hu")
+#if CHAR_MIN < 0
 TEST_BASIC_TYPE_CORE_FUNCTION_DEF (xdr_char, char, "hhd")
+#else
+TEST_BASIC_TYPE_CORE_FUNCTION_DEF (xdr_char, char, "hhu")
+#endif
 TEST_BASIC_TYPE_CORE_FUNCTION_DEF (xdr_u_char, u_char, "hhu")
 TEST_BASIC_TYPE_CORE_FUNCTION_DEF (xdr_int8_t, int8_t, PRId8)
 TEST_BASIC_TYPE_CORE_FUNCTION_DEF (xdr_u_int8_t, u_int8_t, PRIu8)

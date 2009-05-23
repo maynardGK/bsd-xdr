@@ -19,6 +19,7 @@
 #if defined (_WIN32) || defined (__MSDOS__) || defined (__DJGPP__) || defined (__OS2__)
 # define HAVE_DOS_BASED_FILE_SYSTEM
 # define FOPEN_WB "wb"
+# define FOPEN_RB "rb"
 # ifndef DIR_SEPARATOR_2
 #  define DIR_SEPARATOR_2 '\\'
 # endif
@@ -42,21 +43,24 @@
 
 #ifdef __CYGWIN__
 # define FOPEN_WB "wb"
+# define FOPEN_RB "rb"
 #endif
 
 #ifndef FOPEN_WB
 # define FOPEN_WB "w"
+# define FOPEN_RB "r"
 #endif
 #ifndef _O_BINARY
 # define _O_BINARY 0
 #endif
 
+#include <getopt.h>
 #if defined(__MINGW32__) || defined(_MSC_VER)
-# include <getopt.h>
 /* getopt.h doesn't define this because stdlib.h is supposed to.
    But doesn't, on mingw or msvc */
 XDR_TEST_DECLS_BEGIN
 int getopt (int argc, char *const *argv, const char *shortopts);
+char *mkdtemp (char *);
 XDR_TEST_DECLS_END
 #endif
 
@@ -75,6 +79,7 @@ XDR_TEST_DECLS_BEGIN
 extern const char *program_name;
 void set_program_name (const char *argv0);
 const char *base_name (const char *s);
+int mkdir_p (const char *, int);
 void dumpmem (FILE * f, void *buf, unsigned int len, unsigned int offset);
 
 typedef struct _log_opts
@@ -87,6 +92,11 @@ void log_msg (log_opts * o, int level, const char *fmt, ...);
 /*********************************************************/
 /* definitions for callbacks to manage/debug XDR streams */
 /*********************************************************/
+
+/* used to initialize the void* data. called once 
+ * per test, and must be called prior to xdr_create_cb.
+ */
+typedef bool_t (*xdr_init_test_cb)(enum xdr_op, void * /*userdata*/);
 
 /* used to initialize an XDR * from the data given in
  * the void*. For instance, an xdrmem implementation 
@@ -116,20 +126,21 @@ typedef bool_t (*xdr_finish_cb)(XDR *, enum xdr_op, void * /*userdata*/);
  */
 typedef void   (*xdr_debug_enc)(void * /*userdata*/);
 
-typedef struct _xdr_stream_ops {
-  xdr_create_cb create_cb;
-  xdr_finish_cb finish_cb;
-  xdr_debug_enc debug_cb;
-} xdr_stream_ops;
+/* used to finalize the void* data. called once 
+ * per test, and no other callbacks may be accessed
+ * (other than xdr_init_test_cb) once this one has
+ * been activated.
+ */
+typedef bool_t (*xdr_fini_test_cb)(void * /*userdata*/);
 
-/* placeholder - this should be moved to xdrstdio_test.c */
-typedef struct _xdrstdio_creation_data {
-  log_opts *log;
-  int      finish_guard;
-  char     *name;
-  char     *fopen_mode;
-  FILE     *f;
-} xdrstdio_creation_data;
+
+typedef struct _xdr_stream_ops {
+  xdr_init_test_cb init_test_cb;
+  xdr_create_cb    create_cb;
+  xdr_finish_cb    finish_cb;
+  xdr_debug_enc    debug_cb;
+  xdr_fini_test_cb fini_test_cb;
+} xdr_stream_ops;
 
 #define TEST_BASIC_TYPE_CORE_FUNCTION_DECL( FUNC, TYPE ) \
 bool_t                                         \
@@ -138,6 +149,7 @@ test_basic_type_core_##FUNC (log_opts * log,   \
   TYPE           *input_data,                  \
   u_int           data_cnt,                    \
   xdr_stream_ops *stream_ops,                  \
+  bool_t          check_too_much,              \
   void           *xdr_data)
 
 TEST_BASIC_TYPE_CORE_FUNCTION_DECL (xdr_int, int);
@@ -316,7 +328,7 @@ bool_t xdr_primitive_struct_t (XDR *, test_struct_of_primitives_t *);
 void init_primitive_struct (test_struct_of_primitives_t *);
 int  compare_primitive_structs (test_struct_of_primitives_t *,
                                 test_struct_of_primitives_t *);
-void print_primitive_struct (test_struct_of_primitives_t *);
+void print_primitive_struct (FILE *, test_struct_of_primitives_t *);
 
 XDR_TEST_DECLS_END
 #endif /* _XDR_TEST_COMMON_H */

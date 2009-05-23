@@ -104,6 +104,7 @@ $(PLATFORM)/%.$(STATIC_O) : %.c
 
 GETOPT_SRCS = src/getopt.c src/getopt1.c
 GETOPT_HDRS = src/getopt.h
+MKDTEMP_SRCS = src/mkdtemp.c
 
 LIBXDR_HDRS = rpc/xdr.h rpc/types.h
 LIBXDR_HDRS_PRIVATE = lib/xdr_private.h
@@ -123,7 +124,8 @@ TEST_XDR_LIBS_STAT = $(PLATFORM)/$(LIBNAME) $(LIBXDR_DEPS)
 TEST_HDRS = src/test/test_common.h
 
 TEST_XDRMEM_HDRS = $(TEST_HDRS) $(LIBXDR_HDRS) $(GETOPT_HDRS)
-TEST_XDRMEM_SRCS = src/test/xdrmem_test.c src/test/test_common.c $(GETOPT_SRCS)
+TEST_XDRMEM_SRCS = src/test/xdrmem_test.c src/test/test_common.c \
+	$(GETOPT_SRCS) $(MKDTEMP_SRCS)
 TEST_XDRMEM_OBJS = $(TEST_XDRMEM_SRCS:%.c=$(PLATFORM)/%.$(O))
 TEST_XDRMEM_OBJS_STAT = $(TEST_XDRMEM_SRCS:%.c=$(PLATFORM)/%.$(STATIC_O))
 TEST_XDRMEM_LIBS = $(TEST_XDR_LIBS)

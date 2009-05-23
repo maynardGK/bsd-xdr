@@ -67,6 +67,7 @@ bool_t test_xdrmem_vector (opts *o);
 bool_t test_xdrmem_reference (opts *o);
 bool_t test_xdrmem_pointer (opts *o);
 bool_t test_xdrmem_list (opts *o);
+bool_t test_xdrmem_primitive_struct (opts *o);
 
 /* This is a xdr_create_cb callback function and data struct */
 typedef struct _xdrmem_creation_data {
@@ -75,6 +76,11 @@ typedef struct _xdrmem_creation_data {
   char     *buf;
   u_int     buf_sz;
 } xdrmem_creation_data;
+
+bool_t
+xdrmem_init_test_cb (enum xdr_op op, void * data)
+{
+}
 
 bool_t
 xdrmem_create_cb (XDR * xdrs, enum xdr_op op, void * data)
@@ -108,11 +114,18 @@ xdrmem_debug_cb (void * data)
              0);
 }
 
+bool_t
+xdrmem_fini_test_cb (void * data)
+{
+}
+
 static xdr_stream_ops xdrmem_stream_ops =
 {
+  xdrmem_init_test_cb,
   xdrmem_create_cb,
   xdrmem_finish_cb,
-  xdrmem_debug_cb
+  xdrmem_debug_cb,
+  xdrmem_fini_test_cb
 };
 
 int
@@ -181,6 +194,7 @@ main (int argc, char *argv[])
   rc &= test_xdrmem_reference (&o);
   rc &= test_xdrmem_pointer (&o);
   rc &= test_xdrmem_list (&o);
+  rc &= test_xdrmem_primitive_struct (&o);
 
   return (rc == TRUE ? EXIT_SUCCESS : EXIT_FAILURE);
 }
@@ -200,7 +214,7 @@ test_xdrmem_int (opts * o)
 
   for (i=0;i<TEST_DATA_SZ;i++) data[i] = INT_DATA[i];
   return test_basic_type_core_xdr_int (o->log, testid, data,
-      TEST_DATA_SZ, &xdrmem_stream_ops, (void *)&xdr_data);
+      TEST_DATA_SZ, &xdrmem_stream_ops, TRUE, (void *)&xdr_data);
 }
 
 bool_t
@@ -218,7 +232,7 @@ test_xdrmem_u_int (opts * o)
 
   for (i=0;i<TEST_DATA_SZ;i++) data[i] = UINT_DATA[i];
   return test_basic_type_core_xdr_u_int (o->log, testid, data,
-      TEST_DATA_SZ, &xdrmem_stream_ops, (void *)&xdr_data);
+      TEST_DATA_SZ, &xdrmem_stream_ops, TRUE, (void *)&xdr_data);
 }
 
 bool_t
@@ -236,7 +250,7 @@ test_xdrmem_long (opts * o)
 
   for (i=0;i<TEST_DATA_SZ;i++) data[i] = LONG_DATA[i];
   return test_basic_type_core_xdr_long (o->log, testid, data,
-      TEST_DATA_SZ, &xdrmem_stream_ops, (void *)&xdr_data);
+      TEST_DATA_SZ, &xdrmem_stream_ops, TRUE, (void *)&xdr_data);
 }
 
 bool_t
@@ -254,7 +268,7 @@ test_xdrmem_u_long (opts * o)
 
   for (i=0;i<TEST_DATA_SZ;i++) data[i] = ULONG_DATA[i];
   return test_basic_type_core_xdr_u_long (o->log, testid, data,
-      TEST_DATA_SZ, &xdrmem_stream_ops, (void *)&xdr_data);
+      TEST_DATA_SZ, &xdrmem_stream_ops, TRUE, (void *)&xdr_data);
 }
 
 bool_t
@@ -272,7 +286,7 @@ test_xdrmem_short (opts * o)
 
   for (i=0;i<TEST_DATA_SZ;i++) data[i] = SHORT_DATA[i];
   return test_basic_type_core_xdr_short (o->log, testid, data,
-      TEST_DATA_SZ, &xdrmem_stream_ops, (void *)&xdr_data);
+      TEST_DATA_SZ, &xdrmem_stream_ops, TRUE, (void *)&xdr_data);
 }
 
 bool_t
@@ -290,7 +304,7 @@ test_xdrmem_u_short (opts * o)
 
   for (i=0;i<TEST_DATA_SZ;i++) data[i] = USHORT_DATA[i];
   return test_basic_type_core_xdr_u_short (o->log, testid, data,
-      TEST_DATA_SZ, &xdrmem_stream_ops, (void *)&xdr_data);
+      TEST_DATA_SZ, &xdrmem_stream_ops, TRUE, (void *)&xdr_data);
 }
 
 bool_t
@@ -314,7 +328,7 @@ test_xdrmem_char (opts * o)
   for (i=0;i<TEST_DATA_SZ;i++) data[i] = (char)UCHAR_DATA[i];
 #endif
   return test_basic_type_core_xdr_char (o->log, testid, data,
-      TEST_DATA_SZ, &xdrmem_stream_ops, (void *)&xdr_data);
+      TEST_DATA_SZ, &xdrmem_stream_ops, TRUE, (void *)&xdr_data);
 }
 
 bool_t
@@ -332,7 +346,7 @@ test_xdrmem_u_char (opts * o)
 
   for (i=0;i<TEST_DATA_SZ;i++) data[i] = UCHAR_DATA[i];
   return test_basic_type_core_xdr_u_char (o->log, testid, data,
-      TEST_DATA_SZ, &xdrmem_stream_ops, (void *)&xdr_data);
+      TEST_DATA_SZ, &xdrmem_stream_ops, TRUE, (void *)&xdr_data);
 }
 
 bool_t
@@ -350,7 +364,7 @@ test_xdrmem_int8_t (opts * o)
 
   for (i=0;i<TEST_DATA_SZ;i++) data[i] = INT8_DATA[i];
   return test_basic_type_core_xdr_char (o->log, testid, data,
-      TEST_DATA_SZ, &xdrmem_stream_ops, (void *)&xdr_data);
+      TEST_DATA_SZ, &xdrmem_stream_ops, TRUE, (void *)&xdr_data);
 }
 
 bool_t
@@ -368,7 +382,7 @@ test_xdrmem_u_int8_t (opts * o)
 
   for (i=0;i<TEST_DATA_SZ;i++) data[i] = UINT8_DATA[i];
   return test_basic_type_core_xdr_u_int8_t (o->log, testid, data,
-      TEST_DATA_SZ, &xdrmem_stream_ops, (void *)&xdr_data);
+      TEST_DATA_SZ, &xdrmem_stream_ops, TRUE, (void *)&xdr_data);
 }
 
 bool_t
@@ -386,7 +400,7 @@ test_xdrmem_uint8_t (opts * o)
 
   for (i=0;i<TEST_DATA_SZ;i++) data[i] = UINT8_DATA[i];
   return test_basic_type_core_xdr_uint8_t (o->log, testid, data,
-      TEST_DATA_SZ, &xdrmem_stream_ops, (void *)&xdr_data);
+      TEST_DATA_SZ, &xdrmem_stream_ops, TRUE, (void *)&xdr_data);
 }
 
 bool_t
@@ -404,7 +418,7 @@ test_xdrmem_int16_t (opts * o)
 
   for (i=0;i<TEST_DATA_SZ;i++) data[i] = INT16_DATA[i];
   return test_basic_type_core_xdr_int16_t (o->log, testid, data,
-      TEST_DATA_SZ, &xdrmem_stream_ops, (void *)&xdr_data);
+      TEST_DATA_SZ, &xdrmem_stream_ops, TRUE, (void *)&xdr_data);
 }
 
 bool_t
@@ -422,7 +436,7 @@ test_xdrmem_u_int16_t (opts * o)
 
   for (i=0;i<TEST_DATA_SZ;i++) data[i] = UINT16_DATA[i];
   return test_basic_type_core_xdr_u_int16_t (o->log, testid, data,
-      TEST_DATA_SZ, &xdrmem_stream_ops, (void *)&xdr_data);
+      TEST_DATA_SZ, &xdrmem_stream_ops, TRUE, (void *)&xdr_data);
 }
 
 bool_t
@@ -440,7 +454,7 @@ test_xdrmem_uint16_t (opts * o)
 
   for (i=0;i<TEST_DATA_SZ;i++) data[i] = UINT16_DATA[i];
   return test_basic_type_core_xdr_uint16_t (o->log, testid, data,
-      TEST_DATA_SZ, &xdrmem_stream_ops, (void *)&xdr_data);
+      TEST_DATA_SZ, &xdrmem_stream_ops, TRUE, (void *)&xdr_data);
 }
 
 bool_t
@@ -458,7 +472,7 @@ test_xdrmem_int32_t (opts * o)
 
   for (i=0;i<TEST_DATA_SZ;i++) data[i] = INT32_DATA[i];
   return test_basic_type_core_xdr_int32_t (o->log, testid, data,
-      TEST_DATA_SZ, &xdrmem_stream_ops, (void *)&xdr_data);
+      TEST_DATA_SZ, &xdrmem_stream_ops, TRUE, (void *)&xdr_data);
 }
 
 bool_t
@@ -476,7 +490,7 @@ test_xdrmem_u_int32_t (opts * o)
 
   for (i=0;i<TEST_DATA_SZ;i++) data[i] = UINT32_DATA[i];
   return test_basic_type_core_xdr_u_int32_t (o->log, testid, data,
-      TEST_DATA_SZ, &xdrmem_stream_ops, (void *)&xdr_data);
+      TEST_DATA_SZ, &xdrmem_stream_ops, TRUE, (void *)&xdr_data);
 }
 
 bool_t
@@ -494,7 +508,7 @@ test_xdrmem_uint32_t (opts * o)
 
   for (i=0;i<TEST_DATA_SZ;i++) data[i] = UINT32_DATA[i];
   return test_basic_type_core_xdr_uint32_t (o->log, testid, data,
-      TEST_DATA_SZ, &xdrmem_stream_ops, (void *)&xdr_data);
+      TEST_DATA_SZ, &xdrmem_stream_ops, TRUE, (void *)&xdr_data);
 }
 
 bool_t
@@ -512,7 +526,7 @@ test_xdrmem_int64_t (opts * o)
 
   for (i=0;i<TEST_DATA_SZ;i++) data[i] = INT64_DATA[i];
   return test_basic_type_core_xdr_int64_t (o->log, testid, data,
-      TEST_DATA_SZ, &xdrmem_stream_ops, (void *)&xdr_data);
+      TEST_DATA_SZ, &xdrmem_stream_ops, TRUE, (void *)&xdr_data);
 }
 
 bool_t
@@ -530,7 +544,7 @@ test_xdrmem_u_int64_t (opts * o)
 
   for (i=0;i<TEST_DATA_SZ;i++) data[i] = UINT64_DATA[i];
   return test_basic_type_core_xdr_u_int64_t (o->log, testid, data,
-      TEST_DATA_SZ, &xdrmem_stream_ops, (void *)&xdr_data);
+      TEST_DATA_SZ, &xdrmem_stream_ops, TRUE, (void *)&xdr_data);
 }
 
 bool_t
@@ -548,7 +562,7 @@ test_xdrmem_uint64_t (opts * o)
 
   for (i=0;i<TEST_DATA_SZ;i++) data[i] = UINT64_DATA[i];
   return test_basic_type_core_xdr_uint64_t (o->log, testid, data,
-      TEST_DATA_SZ, &xdrmem_stream_ops, (void *)&xdr_data);
+      TEST_DATA_SZ, &xdrmem_stream_ops, TRUE, (void *)&xdr_data);
 }
 
 bool_t
@@ -566,7 +580,7 @@ test_xdrmem_hyper (opts * o)
 
   for (i=0;i<TEST_DATA_SZ;i++) data[i] = HYPER_DATA[i];
   return test_basic_type_core_xdr_hyper (o->log, testid, data,
-      TEST_DATA_SZ, &xdrmem_stream_ops, (void *)&xdr_data);
+      TEST_DATA_SZ, &xdrmem_stream_ops, TRUE, (void *)&xdr_data);
 }
 
 bool_t
@@ -584,7 +598,7 @@ test_xdrmem_u_hyper (opts * o)
 
   for (i=0;i<TEST_DATA_SZ;i++) data[i] = UHYPER_DATA[i];
   return test_basic_type_core_xdr_u_hyper (o->log, testid, data,
-      TEST_DATA_SZ, &xdrmem_stream_ops, (void *)&xdr_data);
+      TEST_DATA_SZ, &xdrmem_stream_ops, TRUE, (void *)&xdr_data);
 }
 
 bool_t
@@ -602,7 +616,7 @@ test_xdrmem_longlong_t (opts * o)
 
   for (i=0;i<TEST_DATA_SZ;i++) data[i] = LONGLONG_DATA[i];
   return test_basic_type_core_xdr_longlong_t (o->log, testid, data,
-      TEST_DATA_SZ, &xdrmem_stream_ops, (void *)&xdr_data);
+      TEST_DATA_SZ, &xdrmem_stream_ops, TRUE, (void *)&xdr_data);
 }
 
 bool_t
@@ -620,7 +634,7 @@ test_xdrmem_u_longlong_t (opts * o)
 
   for (i=0;i<TEST_DATA_SZ;i++) data[i] = ULONGLONG_DATA[i];
   return test_basic_type_core_xdr_u_longlong_t (o->log, testid, data,
-      TEST_DATA_SZ, &xdrmem_stream_ops, (void *)&xdr_data);
+      TEST_DATA_SZ, &xdrmem_stream_ops, TRUE, (void *)&xdr_data);
 }
 
 bool_t
@@ -638,7 +652,7 @@ test_xdrmem_float (opts * o)
 
   init_float_data (data);
   return test_basic_type_core_xdr_float (o->log, testid, data,
-      TEST_DATA_SZ, &xdrmem_stream_ops, (void *)&xdr_data);
+      TEST_DATA_SZ, &xdrmem_stream_ops, TRUE, (void *)&xdr_data);
 }
 
 bool_t
@@ -656,7 +670,7 @@ test_xdrmem_double (opts * o)
 
   init_double_data (data);
   return test_basic_type_core_xdr_double (o->log, testid, data,
-      TEST_DATA_SZ, &xdrmem_stream_ops, (void *)&xdr_data);
+      TEST_DATA_SZ, &xdrmem_stream_ops, TRUE, (void *)&xdr_data);
 }
 
 bool_t
@@ -674,7 +688,7 @@ test_xdrmem_bool (opts * o)
 
   for (i=0;i<TEST_DATA_SZ;i++) data[i] = BOOL_DATA[i];
   return test_basic_type_core_xdr_bool (o->log, testid, data,
-      TEST_DATA_SZ, &xdrmem_stream_ops, (void *)&xdr_data);
+      TEST_DATA_SZ, &xdrmem_stream_ops, TRUE, (void *)&xdr_data);
 }
 
 bool_t
@@ -692,7 +706,7 @@ test_xdrmem_enum (opts * o)
 
   for (i=0;i<TEST_DATA_SZ;i++) data[i] = ENUM_DATA[i];
   return test_basic_type_core_xdr_enum (o->log, testid, (enum_t*) data,
-      TEST_DATA_SZ, &xdrmem_stream_ops, (void *)&xdr_data);
+      TEST_DATA_SZ, &xdrmem_stream_ops, TRUE, (void *)&xdr_data);
 }
 
 bool_t
@@ -1556,7 +1570,93 @@ test_xdrmem_list (opts * o)
                                 xdr_pgn_list_t);
 }
 
-/*
-big data structure.
-*/
+bool_t
+test_xdrmem_primitive_struct (opts * o)
+{
+  static const char *testid= "test_xdrmem_primitive_struct";
+  char buf[144];
+  int buf_sz = 144;
+  test_struct_of_primitives_t data;
+  test_struct_of_primitives_t p;
+  u_int pos;
+
+  XDR xdr_enc;
+  XDR xdr_dec;
+  bool_t pass = TRUE;
+
+  init_primitive_struct (&data);
+  memset (buf, 0, buf_sz);
+
+  log_msg (o->log, XDR_LOG_DETAIL, "%s: Entering test.\n", testid);
+
+  if (o->log->level >= XDR_LOG_DEBUG)
+    {
+      fprintf (o->log->f, "%s: structure contents (input):\n", testid);
+      print_primitive_struct (o->log->f, &data);
+    }
+
+  xdrmem_create (&xdr_enc, buf, buf_sz, XDR_ENCODE);
+  if (!xdr_primitive_struct_t (&xdr_enc, &data))
+    {
+      log_msg (o->log, XDR_LOG_INFO,
+               "%s(xdr_primitive_struct_t): failed XDR_ENCODE\n",
+               testid);
+      pass = FALSE; 
+      goto test_xdrmem_array_end;
+    }
+  pos = XDR_GETPOS (&xdr_enc);
+  log_msg (o->log, XDR_LOG_INFO,
+           "%s(xdr_primitive_struct_t): XDR_ENCODE used %d bytes\n",
+           testid, pos);
+
+  if (o->log->level >= XDR_LOG_DEBUG)
+    dumpmem (o->log->f, buf, buf_sz, 0);
+
+  /* decode into allocated buffer */
+  xdrmem_create (&xdr_dec, buf, buf_sz, XDR_DECODE);
+  if (!xdr_primitive_struct_t (&xdr_dec, &p))
+    {
+      log_msg (o->log, XDR_LOG_INFO,
+               "%s(xdr_primitive_struct_t): failed XDR_DECODE\n",
+               testid);
+      pass = FALSE;
+      goto test_xdrmem_array_end2;
+    }
+  pos = XDR_GETPOS (&xdr_dec);
+  log_msg (o->log, XDR_LOG_INFO,
+           "%s(xdr_primitive_struct_t): XDR_DECODE used %d bytes\n",
+           testid, pos);
+
+  if (o->log->level >= XDR_LOG_DEBUG)
+    {
+      fprintf (o->log->f, "%s: structure contents (output):\n", testid);
+      print_primitive_struct (o->log->f, &p);
+    }
+  
+  if (compare_primitive_structs (&data, &p) != 0)
+    {
+      log_msg (o->log, XDR_LOG_INFO,
+               "%s(xdr_primitive_struct_t): failed compare\n",
+               testid);
+       if (o->log->level >= XDR_LOG_INFO)
+         {
+           fprintf (o->log->f, "Expected:\n");
+           print_primitive_struct (o->log->f, &p);
+           fprintf (o->log->f, "Received:\n");
+           print_primitive_struct (o->log->f, &p);
+         }
+       pass = FALSE;
+       goto test_xdrmem_array_end2;
+    }
+
+test_xdrmem_array_end2:
+  XDR_DESTROY (&xdr_dec);
+test_xdrmem_array_end:
+  XDR_DESTROY (&xdr_enc);
+  if (pass == TRUE)
+    log_msg (o->log, XDR_LOG_NORMAL, "%s: PASS\n", testid);
+  else
+    log_msg (o->log, XDR_LOG_NORMAL, "%s: FAIL\n", testid);
+  return pass;
+}
 
